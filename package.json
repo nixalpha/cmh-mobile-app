@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
+    "@types/node": "^26.6.6",
     "@types/react": "~19.3.0",
     "convex-test": "^0.0.71",
     "eslint": "^9.0.0",
@@ -46,7 +47,9 @@
     "lint": "expo lint",
     "convex:dev": "convex dev",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/catalog",
+    "catalog:build": "bun scripts/catalog/build.ts",
+    "catalog:load": "bun scripts/catalog/load.ts"
   },
   "private": true
 }

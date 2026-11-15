@@ -1,0 +1,31 @@
+{
+  "destinations": {
+    "remove": [
+      "Q664609",
+      "Q38272",
+      "Q35942"
+    ],
+    "rename": {},
+    "kind": {
+      "Q3125978": "island",
+      "Q1460": "island",
+      "Q1462": "island",
+      "Q34366": "island",
+      "Q706541": "island",
+      "Q23635": "island",
+      "Q766445": "island",
+      "Q1524354": "island",
+      "Q1273": "region"
+    }
+  },
+  "landmarks": {
+    "remove": [
+      "Q1030463",
+      "Q806452",
+      "Q16869",
+      "Q1502138"
+    ],
+    "rename": {},
+    "pin": {}
+  }
+}
