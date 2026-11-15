@@ -19,12 +19,14 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_lists from "../lib/lists.js";
 import type * as lib_ranking from "../lib/ranking.js";
+import type * as lib_recommendations from "../lib/recommendations.js";
 import type * as lib_social from "../lib/social.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_visits from "../lib/visits.js";
 import type * as notifications from "../notifications.js";
 import type * as places from "../places.js";
 import type * as rankings from "../rankings.js";
+import type * as recommendations from "../recommendations.js";
 import type * as users from "../users.js";
 
 import type {
@@ -45,12 +47,14 @@ declare const fullApi: ApiFromModules<{
   "lib/errors": typeof lib_errors;
   "lib/lists": typeof lib_lists;
   "lib/ranking": typeof lib_ranking;
+  "lib/recommendations": typeof lib_recommendations;
   "lib/social": typeof lib_social;
   "lib/text": typeof lib_text;
   "lib/visits": typeof lib_visits;
   notifications: typeof notifications;
   places: typeof places;
   rankings: typeof rankings;
+  recommendations: typeof recommendations;
   users: typeof users;
 }>;
 
