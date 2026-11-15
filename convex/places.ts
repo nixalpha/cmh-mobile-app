@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import { destinationValidator, landmarkValidator, toDestination, toLandmark } from "./destinations";
+import { postActivity, removeActivities, UNLOCK_COALESCE_MS } from "./lib/activities";
 import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { getHeader, getRanking } from "./lib/lists";
@@ -99,7 +100,7 @@ export const visits = query({
 });
 
 export const save = mutation({
-  args: { destinationId: v.id("destinations") },
+  args: { destinationId: v.id("destinations"), post: v.optional(v.boolean()) },
   returns: v.null(),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
@@ -110,8 +111,17 @@ export const save = mutation({
         q.eq("userId", user._id).eq("destinationId", args.destinationId),
       )
       .unique();
-    if (existing === null) {
-      await ctx.db.insert("saves", { userId: user._id, destinationId: args.destinationId });
+    if (existing !== null) return null;
+    await ctx.db.insert("saves", { userId: user._id, destinationId: args.destinationId });
+    if (args.post ?? true) {
+      await postActivity(ctx, {
+        type: "saved",
+        actorId: user._id,
+        destinationId: args.destinationId,
+        visibility: "friends",
+        likeCount: 0,
+        commentCount: 0,
+      });
     }
     return null;
   },
@@ -128,7 +138,9 @@ export const unsave = mutation({
         q.eq("userId", user._id).eq("destinationId", args.destinationId),
       )
       .unique();
-    if (existing !== null) await ctx.db.delete("saves", existing._id);
+    if (existing === null) return null;
+    await ctx.db.delete("saves", existing._id);
+    await removeActivities(ctx, user._id, args.destinationId, (a) => a.type === "saved");
     return null;
   },
 });
@@ -160,7 +172,7 @@ async function getUnlock(ctx: QueryCtx, userId: Id<"users">, landmarkId: Id<"lan
 }
 
 export const unlockLandmark = mutation({
-  args: { landmarkId: v.id("landmarks") },
+  args: { landmarkId: v.id("landmarks"), post: v.optional(v.boolean()) },
   returns: v.null(),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
@@ -175,8 +187,37 @@ export const unlockLandmark = mutation({
       destinationId: landmark.destinationId,
       verification: "self_reported",
     });
-    await ctx.db.patch("visits", visit._id, { unlockCount: visit.unlockCount + 1 });
+    const unlockedCount = visit.unlockCount + 1;
+    await ctx.db.patch("visits", visit._id, { unlockCount: unlockedCount });
     await bumpUser(ctx, user._id, "unlockCount", 1);
+    if (!(args.post ?? true)) return null;
+
+    const landmarkTotal = (await ctx.db.get("destinations", landmark.destinationId))?.landmarkCount ?? 0;
+    const recent = await ctx.db
+      .query("activities")
+      .withIndex("by_actorId_and_destinationId", (q) =>
+        q.eq("actorId", user._id).eq("destinationId", landmark.destinationId),
+      )
+      .order("desc")
+      .take(20);
+    const current = recent.find(
+      (a) => a.type === "unlocked" && a._creationTime > Date.now() - UNLOCK_COALESCE_MS,
+    );
+    if (current) {
+      await ctx.db.patch("activities", current._id, { landmarkId: landmark._id, unlockedCount, landmarkTotal });
+      return null;
+    }
+    await postActivity(ctx, {
+      type: "unlocked",
+      actorId: user._id,
+      destinationId: landmark.destinationId,
+      visibility: "friends",
+      likeCount: 0,
+      commentCount: 0,
+      landmarkId: landmark._id,
+      unlockedCount,
+      landmarkTotal,
+    });
     return null;
   },
 });

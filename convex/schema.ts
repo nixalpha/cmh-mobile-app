@@ -17,6 +17,16 @@ export const verification = v.union(
   v.literal("check_in"),
 );
 
+const itemId = v.union(v.id("destinations"), v.id("landmarks"));
+
+const activityBase = {
+  actorId: v.id("users"),
+  destinationId: v.id("destinations"),
+  visibility: v.union(v.literal("friends"), v.literal("private")),
+  likeCount: v.number(),
+  commentCount: v.number(),
+};
+
 const catalogStatus = v.union(v.literal("active"), v.literal("retired"));
 
 export default defineSchema({
@@ -123,7 +133,7 @@ export default defineSchema({
   rankings: defineTable({
     userId: v.id("users"),
     list: rankedList,
-    itemId: v.union(v.id("destinations"), v.id("landmarks")),
+    itemId,
     rank: v.number(),
   })
     .index("by_userId_and_list_and_rank", ["userId", "list", "rank"])
@@ -132,10 +142,74 @@ export default defineSchema({
   comparisons: defineTable({
     userId: v.id("users"),
     list: rankedList,
-    itemId: v.union(v.id("destinations"), v.id("landmarks")),
-    opponentId: v.union(v.id("destinations"), v.id("landmarks")),
+    itemId,
+    opponentId: itemId,
     outcome: v.union(v.literal("new"), v.literal("existing"), v.literal("tie")),
   }).index("by_userId_and_list", ["userId", "list"]),
+
+  activities: defineTable(
+    v.union(
+      v.object({
+        ...activityBase,
+        type: v.literal("ranked"),
+        list: rankedList,
+        itemId,
+        rank: v.number(),
+        listSize: v.number(),
+        score: v.number(),
+        beatId: v.optional(itemId),
+        note: v.optional(v.string()),
+        showPair: v.boolean(),
+      }),
+      v.object({
+        ...activityBase,
+        type: v.literal("unlocked"),
+        landmarkId: v.id("landmarks"),
+        unlockedCount: v.number(),
+        landmarkTotal: v.number(),
+      }),
+      v.object({ ...activityBase, type: v.literal("saved") }),
+    ),
+  )
+    .index("by_actorId", ["actorId"])
+    .index("by_actorId_and_destinationId", ["actorId", "destinationId"]),
+
+  feedItems: defineTable({
+    ownerId: v.id("users"),
+    actorId: v.id("users"),
+    activityId: v.id("activities"),
+    postedAt: v.number(),
+  })
+    .index("by_ownerId_and_postedAt", ["ownerId", "postedAt"])
+    .index("by_ownerId_and_actorId", ["ownerId", "actorId"])
+    .index("by_activityId_and_ownerId", ["activityId", "ownerId"]),
+
+  likes: defineTable({
+    activityId: v.id("activities"),
+    userId: v.id("users"),
+  }).index("by_activityId_and_userId", ["activityId", "userId"]),
+
+  comments: defineTable({
+    activityId: v.id("activities"),
+    authorId: v.id("users"),
+    body: v.string(),
+  }).index("by_activityId", ["activityId"]),
+
+  notifications: defineTable({
+    userId: v.id("users"),
+    actorId: v.id("users"),
+    type: v.union(
+      v.literal("friend_request"),
+      v.literal("friend_accepted"),
+      v.literal("like"),
+      v.literal("comment"),
+    ),
+    activityId: v.optional(v.id("activities")),
+    read: v.boolean(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_read", ["userId", "read"])
+    .index("by_activityId_and_actorId", ["activityId", "actorId"]),
 
   friendRequests: defineTable({
     fromId: v.id("users"),

@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { removeActivities } from "./activities";
 import { fail } from "./errors";
 import { removeRanking } from "./lists";
 
@@ -73,6 +74,12 @@ export async function ensureVisit(
 export async function deleteUnlock(ctx: MutationCtx, unlock: Doc<"landmarkUnlocks">) {
   await ctx.db.delete("landmarkUnlocks", unlock._id);
   await removeRanking(ctx, unlock.userId, "landmarks", unlock.landmarkId);
+  await removeActivities(
+    ctx,
+    unlock.userId,
+    unlock.destinationId,
+    (a) => a.type === "unlocked" && a.landmarkId === unlock.landmarkId,
+  );
   await bumpUser(ctx, unlock.userId, "unlockCount", -1);
   const visit = await getVisit(ctx, unlock.userId, unlock.destinationId);
   if (visit !== null) {
@@ -89,6 +96,7 @@ export async function deleteVisit(ctx: MutationCtx, visit: Doc<"visits">) {
     .take(200);
   for (const unlock of unlocks) await deleteUnlock(ctx, unlock);
   await removeRanking(ctx, visit.userId, "destinations", visit.destinationId);
+  await removeActivities(ctx, visit.userId, visit.destinationId, (a) => a.type !== "saved");
   await ctx.db.delete("visits", visit._id);
   await bumpUser(ctx, visit.userId, "visitCount", -1);
   if (visit.countryCode !== "" && (await visitsInCountry(ctx, visit.userId, visit.countryCode)) === null) {

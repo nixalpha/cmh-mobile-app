@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { removeActivities } from "./activities";
 import { fail } from "./errors";
 import {
   answer,
@@ -59,6 +60,13 @@ export async function removeRanking(ctx: MutationCtx, userId: Id<"users">, list:
   if (row === null || header === null) return false;
   await ctx.db.delete("rankings", row._id);
   await shiftFrom(ctx, userId, list, row.rank + 1, -1);
+  const destinationId =
+    list === "destinations"
+      ? (itemId as Id<"destinations">)
+      : (await ctx.db.get("landmarks", itemId as Id<"landmarks">))?.destinationId;
+  if (destinationId) {
+    await removeActivities(ctx, userId, destinationId, (a) => a.type === "ranked" && a.itemId === itemId);
+  }
   await ctx.db.patch("rankedLists", header._id, {
     size: header.size - 1,
     version: header.version + 1,

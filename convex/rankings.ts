@@ -2,8 +2,9 @@ import { paginationOptsValidator, paginationResultValidator } from "convex/serve
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, query, type QueryCtx } from "./_generated/server";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { destinationValidator, landmarkValidator, toDestination, toLandmark } from "./destinations";
+import { postActivity } from "./lib/activities";
 import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
 import {
@@ -28,6 +29,39 @@ const answers = v.array(
   }),
 );
 const placement = v.object({ rank: v.number(), size: v.number(), score: v.number() });
+const post = v.optional(v.object({ note: v.optional(v.string()), showPair: v.optional(v.boolean()) }));
+const MAX_NOTE = 280;
+
+async function postRanking(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  list: List,
+  id: ItemId,
+  destinationId: Id<"destinations">,
+  placed: { rank: number; size: number; below: ItemId | null },
+  options: { note?: string; showPair?: boolean },
+) {
+  const note = options.note?.trim();
+  if (note !== undefined && note.length > MAX_NOTE) {
+    fail("INVALID", `Notes are at most ${MAX_NOTE} characters.`);
+  }
+  await postActivity(ctx, {
+    type: "ranked",
+    actorId: userId,
+    destinationId,
+    visibility: "friends",
+    likeCount: 0,
+    commentCount: 0,
+    list,
+    itemId: id,
+    rank: placed.rank,
+    listSize: placed.size,
+    score: scoreForRank(placed.rank, placed.size),
+    beatId: placed.below ?? undefined,
+    note: note || undefined,
+    showPair: options.showPair ?? false,
+  });
+}
 
 async function requireRankable(ctx: QueryCtx, userId: Id<"users">, list: List, id: ItemId) {
   if (list === "destinations") {
@@ -52,11 +86,12 @@ export const place = mutation({
     answers,
     version: v.number(),
     visit: v.optional(v.object({ year: v.optional(v.number()), month: v.optional(v.number()) })),
+    post,
   },
   returns: placement,
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const { destination } = await requireRankable(ctx, user._id, args.list, args.itemId);
+    const { destination, landmark } = await requireRankable(ctx, user._id, args.list, args.itemId);
     if ((await getRanking(ctx, user._id, args.list, args.itemId)) !== null) {
       fail("CONFLICT", "That's already in your list. Rank it again to move it.");
     }
@@ -67,15 +102,20 @@ export const place = mutation({
       await ensureVisit(ctx, user._id, destination, args.visit);
     }
     const placed = await placeRanking(ctx, user._id, args.list, args.itemId, args.answers, args.version);
+    if (args.post) {
+      const destinationId = destination?._id ?? landmark!.destinationId;
+      await postRanking(ctx, user._id, args.list, args.itemId, destinationId, placed, args.post);
+    }
     return { rank: placed.rank, size: placed.size, score: scoreForRank(placed.rank, placed.size) };
   },
 });
 
 export const rerank = mutation({
-  args: { list: rankedList, itemId, answers, version: v.number() },
+  args: { list: rankedList, itemId, answers, version: v.number(), post },
   returns: placement,
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+    const { destination, landmark } = await requireRankable(ctx, user._id, args.list, args.itemId);
     const header = await getHeader(ctx, user._id, args.list);
     if ((header?.version ?? 0) !== args.version) {
       fail("LIST_CHANGED", "Your list changed. Start the ranking again.");
@@ -84,6 +124,10 @@ export const rerank = mutation({
       fail("NOT_FOUND", "That isn't in your list.");
     }
     const placed = await placeRanking(ctx, user._id, args.list, args.itemId, args.answers, args.version + 1);
+    if (args.post) {
+      const destinationId = destination?._id ?? landmark!.destinationId;
+      await postRanking(ctx, user._id, args.list, args.itemId, destinationId, placed, args.post);
+    }
     return { rank: placed.rank, size: placed.size, score: scoreForRank(placed.rank, placed.size) };
   },
 });
