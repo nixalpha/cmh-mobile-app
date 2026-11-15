@@ -52,7 +52,7 @@ export function LivePost({ post }: { post: Post }) {
       </Glass>
       {post.ranking && (
         <View style={styles.copy}>
-          <Text variant="meta" color="muted">Ranked #{post.ranking.rank} of {post.ranking.listSize} at posting</Text>
+          <Text variant="meta" color="muted">Ranked #{post.ranking.rank} of {post.ranking.listSize}</Text>
           {post.ranking.showPair && post.ranking.beatName && (
             <View style={styles.pair}>
               <Text variant="label" style={styles.side}>{placeName}</Text>
@@ -64,7 +64,7 @@ export function LivePost({ post }: { post: Post }) {
         </View>
       )}
       {post.unlock && (
-        <Text variant="meta" color="muted">{post.unlock.unlockedCount} of {post.unlock.landmarkTotal} landmarks unlocked at posting</Text>
+        <Text variant="meta" color="muted">{post.unlock.unlockedCount} of {post.unlock.landmarkTotal} landmarks</Text>
       )}
       <View style={styles.actions}>
         <AsyncButton

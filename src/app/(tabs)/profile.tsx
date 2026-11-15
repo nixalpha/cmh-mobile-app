@@ -56,7 +56,7 @@ export default function ProfileScreen() {
           </View>}
           <Text variant="caption" weight="bold" color="muted">TOP 3 PLACES</Text>
           {top === undefined ? <Notice>Loading your rankings…</Notice> : top.page.length === 0
-            ? <Text variant="meta" color="muted">Rank your first place to start your top three.</Text>
+            ? <Text variant="meta" color="muted">Nothing ranked yet.</Text>
             : <View style={styles.topRow}>{top.page.map((item, index) => item.destination && (
               <Chip
                 key={item.itemId}
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
       <View style={styles.stack}>
         <SectionHeader title="Friends" count={me?.friendCount} trailing={manage ? 'Close' : 'Manage'} onTrailingPress={() => setManage(!manage)} />
         {friends.status === 'LoadingFirstPage' && <Notice>Loading friends…</Notice>}
-        {friends.status !== 'LoadingFirstPage' && friends.results.length === 0 && <Notice>Add a friend to explore together.</Notice>}
+        {friends.status !== 'LoadingFirstPage' && friends.results.length === 0 && <Notice>No friends yet.</Notice>}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendRow}>
           {friends.results.map((person) => (
             <Pressable
@@ -94,8 +94,7 @@ export default function ProfileScreen() {
       </View>
       {manage && <FriendManager />}
       <SegmentedControl segments={segments} value={tab} onChange={(value) => { setTab(value); setPicked(null); }} />
-      <Text variant="meta" color="muted">{tab === 'mine' ? 'Your rankings, saves, and unlocks'
-        : friend ? `Showing ${personName(friend)} · tap again for everyone` : 'Recent from everyone · tap a friend to filter'}</Text>
+      {tab === 'friends' && friend && <Text variant="meta" color="muted">{personName(friend)}</Text>}
     </View>
   );
 

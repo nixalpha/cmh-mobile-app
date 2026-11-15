@@ -43,9 +43,7 @@ export default function AuthScreen() {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Screen backdrop="onboarding" scroll style={styles.content}>
-        <Text variant="eyebrow" color="slate">WAYFARER</Text>
         <Text variant="display">{signup ? 'Your next chapter.' : 'Welcome back.'}</Text>
-        <Text color="slate">{signup ? 'Collect the places you love. Find your next favorite.' : 'Your places, your people, your perspective.'}</Text>
         <Glass style={styles.form}>
           <View style={styles.field}>
             <Text variant="label">Username</Text>

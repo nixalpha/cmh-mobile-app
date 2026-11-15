@@ -24,7 +24,6 @@ export default function CitiesScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Text variant="title" accessibilityRole="header">Your places</Text>
-            <Text color="slate">Your cities, islands, and memories.</Text>
             <Button label="Add a past trip" icon="plus" onPress={() => router.push('/onboarding')} />
           </View>
         }
@@ -38,13 +37,12 @@ export default function CitiesScreen() {
             <View style={styles.copy}>
               <Text variant="cardTitle">{item.destination.name}</Text>
               <Text variant="caption" color="muted">{item.destination.countryName}</Text>
-              <Text variant="caption" color="slate">{item.rank === null ? 'Not ranked yet' : `Your #${item.rank}`}</Text>
-              <Text variant="caption" color="muted">{item.unlockCount} landmarks collected</Text>
-              {item.year !== null && <Text variant="caption" color="muted">Visited in {item.year}</Text>}
+              {item.rank !== null && <Text variant="caption" color="slate">#{item.rank}</Text>}
+              {item.year !== null && <Text variant="caption" color="muted">{item.year}</Text>}
             </View>
           </Glass>
         )}
-        ListEmptyComponent={<Notice>{status === 'LoadingFirstPage' ? 'Loading your places…' : 'No visits yet. Add a past trip to start your collection.'}</Notice>}
+        ListEmptyComponent={<Notice>{status === 'LoadingFirstPage' ? 'Loading your places…' : 'No places yet.'}</Notice>}
         ListFooterComponent={
           <View style={styles.footer}>
             {status === 'CanLoadMore' && <Button label="Load more places" variant="secondary" onPress={() => loadMore(20)} />}

@@ -51,7 +51,6 @@ export default function OnboardingScreen() {
   return (
     <Screen backdrop="onboarding" scroll>
       <Text variant="title" accessibilityRole="header">Where have you been?</Text>
-      <Text color="slate">Add cities and islands you’ve visited. Rank them later, in your own order.</Text>
       <SearchField placeholder="Search places" value={query} onChangeText={setQuery} />
       <Text variant="cardTitle">{search ? 'Search results' : 'Popular places'}</Text>
       {places === undefined || query.trim() !== search ? <Notice>Finding places…</Notice> : (
@@ -69,7 +68,7 @@ export default function OnboardingScreen() {
         </View>
       )}
       <Glass style={styles.summary}>
-        <Text variant="cardTitle">{selected.length} of 20 places selected</Text>
+        <Text variant="cardTitle">{selected.length} of 20 selected</Text>
         {selected.length > 0 && (
           <View style={styles.chips}>
             {selected.map((place) => (
@@ -77,8 +76,7 @@ export default function OnboardingScreen() {
             ))}
           </View>
         )}
-        <Text variant="caption" color="muted">Visits are self-reported. If saving is interrupted, retry Continue; already-added visits won’t be duplicated.</Text>
-        {selected.length === 20 && <Notice>You’ve reached the limit for this batch. Add more later.</Notice>}
+        {selected.length === 20 && <Notice>That’s the max for now.</Notice>}
         <AsyncButton label="Continue" onPress={continueToApp} />
         {!saving && <Button label="Skip for now" variant="link" onPress={() => router.replace('/feed')} />}
       </Glass>

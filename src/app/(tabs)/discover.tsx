@@ -25,7 +25,6 @@ export default function DiscoverScreen() {
   return (
     <Screen backdrop="discover" scroll>
       <Text variant="title" accessibilityRole="header">Discover</Text>
-      <Text color="slate">Find your next city or island.</Text>
       <SearchField placeholder="Search places" value={query} onChangeText={setQuery} />
       <Text variant="cardTitle">{search ? 'Search results' : 'Popular places'}</Text>
       {places === undefined || query.trim() !== search ? <Notice>Finding places…</Notice> : (
@@ -48,9 +47,9 @@ export default function DiscoverScreen() {
           {places.length === 0 && <Notice>No places found. Try another name.</Notice>}
         </View>
       )}
-      {!!search && places?.length === 20 && <Notice>Showing the first 20 matches. Refine your search for more specific results.</Notice>}
+      {!!search && places?.length === 20 && <Notice>Showing the top 20. Narrow your search for more.</Notice>}
       <Text variant="caption" color="muted">
-        Place data adapted from <Link href="https://www.geonames.org/">GeoNames</Link> (<Link href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</Link>), <Link href="https://www.wikidata.org/">Wikidata</Link> (CC0), and <Link href="https://en.wikivoyage.org/">Wikivoyage contributors</Link> (<Link href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</Link>). Catalog selection and labels have been adapted.
+        Place data adapted from <Link href="https://www.geonames.org/">GeoNames</Link> (<Link href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</Link>), <Link href="https://www.wikidata.org/">Wikidata</Link> (CC0), and <Link href="https://en.wikivoyage.org/">Wikivoyage contributors</Link> (<Link href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</Link>).
       </Text>
     </Screen>
   );

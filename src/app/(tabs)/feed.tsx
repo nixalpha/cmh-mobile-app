@@ -63,16 +63,8 @@ function ForYou() {
       contentContainerStyle={styles.list}
       ListHeaderComponent={
         <View style={styles.stack}>
-          <Text variant="heading">New for you</Text>
-          {recommendations && (
-            <Text variant="meta" color="muted">
-              {recommendations.basedOn > 0
-                ? `Based on ${recommendations.basedOn} rankings and your friends`
-                : 'Start exploring. Rank places and add friends to personalize your recommendations.'}
-            </Text>
-          )}
-          {refreshError && <Notice>We couldn’t refresh your recommendations. Try again.</Notice>}
-          <AsyncButton label="Refresh recommendations" variant="link" onPress={async () => {
+          {refreshError && <Notice>Couldn’t refresh. Try again.</Notice>}
+          <AsyncButton label="Refresh" variant="link" onPress={async () => {
             await refresh({});
             setRefreshError(false);
           }} />
@@ -81,7 +73,7 @@ function ForYou() {
       ListEmptyComponent={
         <Notice>{recommendations === undefined || (recommendations.computedAt === null && !refreshError)
           ? 'Finding places for you…'
-          : 'No recommendations yet. Explore places from your lists or add friends to get started.'}</Notice>
+          : 'Nothing yet. Rank places or add friends.'}</Notice>
       }
       renderItem={({ item, index }) => (
         <Glass
