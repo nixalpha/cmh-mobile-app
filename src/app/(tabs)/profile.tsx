@@ -1,21 +1,23 @@
+import { useAuthActions } from '@convex-dev/auth/react';
+import { usePaginatedQuery, useQuery } from 'convex/react';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { PostRow } from '@/components/post-row';
+import { FriendManager } from '@/components/friend-manager';
+import { LivePosts, personInitials, personName } from '@/components/live-post';
+import { AsyncButton, Notice } from '@/components/live-ui';
 import { SectionHeader } from '@/components/section-header';
 import { StatTile } from '@/components/stat-tile';
 import { Avatar } from '@/components/ui/avatar';
 import { CountDot } from '@/components/ui/badge';
 import { Chip } from '@/components/ui/chip';
 import { Glass } from '@/components/ui/glass';
-import { Icon } from '@/components/ui/icon';
-import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Text } from '@/components/ui/text';
 import { colors, radius } from '@/constants/theme';
-import { friendPosts, friends, me, myPosts } from '@/mocks/data';
+import { api, type Id } from '@/lib/backend';
 
 const segments = [
   { value: 'mine', label: 'My posts' },
@@ -23,146 +25,93 @@ const segments = [
 ] as const;
 
 export default function ProfileScreen() {
+  const { signOut } = useAuthActions();
+  const me = useQuery(api.users.me, {});
+  const top = useQuery(api.rankings.list, { list: 'destinations', paginationOpts: { numItems: 3, cursor: null } });
+  const friends = usePaginatedQuery(api.friends.list, {}, { initialNumItems: 20 });
   const [tab, setTab] = useState<(typeof segments)[number]['value']>('mine');
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Id<'users'> | null>(null);
+  const [manage, setManage] = useState(false);
+  const friend = friends.results.find((person) => person._id === picked);
 
-  const friend = friends.find((person) => person.id === picked);
-  const posts =
-    tab === 'mine' ? myPosts : friend ? friendPosts.filter((post) => post.by === friend.id) : friendPosts.slice(0, 4);
-  const filterLabel =
-    tab === 'mine'
-      ? 'Your rankings and unlocks'
-      : friend
-        ? `Showing ${friend.name} · tap again for everyone`
-        : 'Recent from everyone · tap a friend to filter';
-
-  return (
-    <Screen backdrop="profile" scroll>
+  const header = (
+    <View style={styles.stack}>
       <View style={styles.header}>
-        <Text weight="bold" color="slate">
-          {me.handle}
-        </Text>
-        <View style={styles.actions}>
-          <IconButton icon="share" label="Share profile" />
-          <IconButton icon="sliders" label="Settings" />
-        </View>
+        <Text weight="bold" color="slate">{me?.handle ? `@${me.handle}` : 'Your profile'}</Text>
+        <AsyncButton label="Sign out" variant="link" onPress={signOut} />
       </View>
-
-      <Glass radius={radius.hero} style={styles.card}>
-        <View style={styles.identity}>
-          <Avatar initials={me.initials} color={me.color} size={72} ring={3} />
-          <View style={styles.identityCopy}>
-            <Text variant="title2" style={styles.name} accessibilityRole="header">
-              {me.name}
-            </Text>
-            <Text variant="meta" color="muted">
-              {me.bio}
-            </Text>
-            <View style={styles.privacy}>
-              <Icon name="lock" size={12} strokeWidth={2.5} color={colors.inkSoft} />
-              <Text variant="micro" weight="bold" color="inkSoft">
-                {me.privacy}
-              </Text>
+      {me === undefined ? <Notice>Loading your profile…</Notice> : me === null ? <Notice>Sign in to see your profile.</Notice> : (
+        <Glass radius={radius.hero} style={styles.card}>
+          <View style={styles.identity}>
+            <Avatar initials={personInitials(me)} color={colors.canvas} size={72} ring={3} />
+            <View style={styles.identityCopy}>
+              <Text variant="title2" accessibilityRole="header">{personName(me)}</Text>
+              {me.bio && <Text variant="meta" color="muted">{me.bio}</Text>}
             </View>
           </View>
-        </View>
-        <View style={styles.stats}>
-          {me.stats.map((stat) => (
-            <StatTile
-              key={stat.label}
-              {...stat}
-              onPress={stat.label === 'Cities' ? () => router.navigate('/cities') : undefined}
-            />
-          ))}
-        </View>
-        <View style={styles.top}>
-          <Text variant="caption" weight="bold" color="muted" style={styles.topLabel}>
-            TOP 3 CITIES
-          </Text>
-          <View style={styles.topRow}>
-            {me.topCities.map((city, index) => (
+          {me.stats && <View style={styles.stats}>
+            <StatTile label="Places" value={String(me.stats.cities)} onPress={() => router.navigate('/cities')} />
+            <StatTile label="Landmarks" value={String(me.stats.landmarks)} />
+            <StatTile label="Countries" value={String(me.stats.countries)} />
+          </View>}
+          <Text variant="caption" weight="bold" color="muted">TOP 3 PLACES</Text>
+          {top === undefined ? <Notice>Loading your rankings…</Notice> : top.page.length === 0
+            ? <Text variant="meta" color="muted">Rank your first place to start your top three.</Text>
+            : <View style={styles.topRow}>{top.page.map((item, index) => item.destination && (
               <Chip
-                key={city}
-                label={city}
+                key={item.itemId}
+                label={item.destination.name}
                 surface="tile"
                 selected={index === 0}
-                leading={<CountDot label={String(index + 1)} inverted={index === 0} />}
+                leading={<CountDot label={String(item.rank)} inverted={index === 0} />}
+                onPress={() => router.push({ pathname: '/place/[id]', params: { id: item.destination!._id } })}
               />
-            ))}
-          </View>
-        </View>
-      </Glass>
-
-      <View style={styles.friends}>
-        <SectionHeader title="Friends" count={me.friendCount} trailing="See all" onTrailingPress={() => {}} />
+            ))}</View>}
+        </Glass>
+      )}
+      <View style={styles.stack}>
+        <SectionHeader title="Friends" count={me?.friendCount} trailing={manage ? 'Close' : 'Manage'} onTrailingPress={() => setManage(!manage)} />
+        {friends.status === 'LoadingFirstPage' && <Notice>Loading friends…</Notice>}
+        {friends.status !== 'LoadingFirstPage' && friends.results.length === 0 && <Notice>Add a friend to explore together.</Notice>}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendRow}>
-          {friends.map((person) => (
+          {friends.results.map((person) => (
             <Pressable
-              key={person.id}
+              key={person._id}
               accessibilityRole="button"
-              accessibilityState={{ selected: picked === person.id }}
-              onPress={() => {
-                setPicked(picked === person.id ? null : person.id);
-                setTab('friends');
-              }}
+              accessibilityLabel={`Show posts by ${personName(person)}`}
+              accessibilityState={{ selected: picked === person._id }}
+              onPress={() => { setPicked(picked === person._id ? null : person._id); setTab('friends'); }}
               style={styles.friend}>
-              <View style={[styles.ring, picked === person.id && styles.ringOn]}>
-                <Avatar initials={person.initials} color={person.color} size={52} />
+              <View style={[styles.ring, picked === person._id && styles.ringOn]}>
+                <Avatar initials={personInitials(person)} color={colors.canvas} size={52} />
               </View>
-              <Text variant="caption" weight="semibold">
-                {person.first}
-              </Text>
+              <Text variant="caption" weight="semibold" numberOfLines={1}>{personName(person)}</Text>
             </Pressable>
           ))}
         </ScrollView>
+        {friends.status === 'CanLoadMore' && <AsyncButton label="More friends" variant="link" onPress={async () => friends.loadMore(20)} />}
+        {friends.status === 'LoadingMore' && <Notice>Loading more friends…</Notice>}
       </View>
-
-      <SegmentedControl
-        segments={segments}
-        value={tab}
-        onChange={(value) => {
-          setTab(value);
-          if (value === 'mine') setPicked(null);
-        }}
-      />
-
-      <View style={styles.posts}>
-        <Text variant="meta" weight="semibold" color="muted">
-          {filterLabel}
-        </Text>
-        {posts.map((post) => (
-          <PostRow key={post.who + post.place} post={post} />
-        ))}
-      </View>
-    </Screen>
+      {manage && <FriendManager />}
+      <SegmentedControl segments={segments} value={tab} onChange={(value) => { setTab(value); setPicked(null); }} />
+      <Text variant="meta" color="muted">{tab === 'mine' ? 'Your rankings, saves, and unlocks'
+        : friend ? `Showing ${personName(friend)} · tap again for everyone` : 'Recent from everyone · tap a friend to filter'}</Text>
+    </View>
   );
+
+  return <Screen backdrop="profile"><LivePosts mode={tab} actorId={picked ?? undefined} header={header} /></Screen>;
 }
 
 const styles = StyleSheet.create({
+  stack: { gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  actions: { flexDirection: 'row', gap: 8 },
   card: { padding: 20, gap: 18 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  identityCopy: { flex: 1, gap: 4, alignItems: 'flex-start' },
-  name: { fontSize: 24, letterSpacing: -0.6 },
-  privacy: {
-    height: 26,
-    paddingLeft: 8,
-    paddingRight: 10,
-    borderRadius: 13,
-    backgroundColor: 'rgba(14,17,22,0.07)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
+  identityCopy: { flex: 1, gap: 4 },
   stats: { flexDirection: 'row', gap: 8 },
-  top: { gap: 8 },
-  topLabel: { letterSpacing: 1.5 },
-  topRow: { flexDirection: 'row', gap: 8 },
-  friends: { gap: 10 },
+  topRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   friendRow: { gap: 14, padding: 2 },
-  friend: { width: 60, alignItems: 'center', gap: 6 },
+  friend: { width: 72, alignItems: 'center', gap: 6 },
   ring: { padding: 2, borderRadius: 30, borderWidth: 2, borderColor: 'transparent' },
   ringOn: { borderColor: colors.ink },
-  posts: { gap: 10 },
 });

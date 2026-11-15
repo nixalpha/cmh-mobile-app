@@ -13,6 +13,7 @@ export type ButtonProps = {
   icon?: IconName;
   trailingIcon?: IconName;
   onPress?: () => void;
+  disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -24,6 +25,7 @@ export function Button({
   icon,
   trailingIcon,
   onPress,
+  disabled = false,
   style,
 }: ButtonProps) {
   const tint = variant === 'primary' ? colors.white : colors.ink;
@@ -39,17 +41,19 @@ export function Button({
       {trailingIcon && <Icon name={trailingIcon} color={tint} size={fontSize + 2} />}
     </>
   );
-  const shape = [styles.base, { height, borderRadius: height / 2 }];
+  const shape = [styles.base, { height, borderRadius: height / 2, opacity: disabled ? 0.5 : 1 }];
 
   if (variant === 'glass') {
     return (
-      <Glass radius={height / 2} onPress={onPress} accessibilityRole="button" style={[shape, style]}>
+      <Glass radius={height / 2} onPress={disabled ? undefined : onPress} accessibilityRole="button" accessibilityState={{ disabled }} style={[shape, style]}>
         {content}
       </Glass>
     );
   }
   return (
     <Pressable
+      disabled={disabled}
+      accessibilityState={{ disabled }}
       onPress={onPress}
       accessibilityRole="button"
       style={({ pressed }) => [

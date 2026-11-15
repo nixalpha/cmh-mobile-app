@@ -1,4 +1,5 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { useConvexAuth } from 'convex/react';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -22,12 +23,15 @@ const flakes = [
 ];
 
 export default function WelcomeScreen() {
+  const { isAuthenticated } = useConvexAuth();
   const top = useScreenTop();
   const fall = useSharedValue(0);
 
   useEffect(() => {
     fall.value = withRepeat(withTiming(1, { duration: 9000, easing: Easing.linear }), -1);
   }, [fall]);
+
+  if (isAuthenticated) return <Redirect href="/feed" />;
 
   return (
     <View style={styles.root}>
@@ -64,13 +68,13 @@ export default function WelcomeScreen() {
         <View style={styles.dots}>
           <PageDots count={3} active={0} />
         </View>
-        <Button label="Get started" trailingIcon="arrowRight" onPress={() => router.push('/onboarding')} />
+        <Button label="Get started" trailingIcon="arrowRight" onPress={() => router.push('/auth?mode=signup')} />
         <Button
           variant="link"
           label="I already have an account"
           height={48}
           fontSize={15}
-          onPress={() => router.replace('/feed')}
+          onPress={() => router.push('/auth?mode=signin')}
         />
       </Glass>
     </View>

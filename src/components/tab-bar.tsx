@@ -11,7 +11,7 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>
 const tabs: Record<string, { icon: IconName; label: string }> = {
   feed: { icon: 'home', label: 'Feed' },
   discover: { icon: 'globe', label: 'Discover' },
-  cities: { icon: 'cities', label: 'Cities' },
+  cities: { icon: 'cities', label: 'Places' },
   profile: { icon: 'user', label: 'Profile' },
 };
 

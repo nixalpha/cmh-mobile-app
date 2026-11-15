@@ -1,107 +1,92 @@
+import { useMutation, useQuery } from 'convex/react';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { ActionCard } from '@/components/action-card';
+import { AsyncButton, Notice } from '@/components/live-ui';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { Glass } from '@/components/ui/glass';
-import { IconButton } from '@/components/ui/icon-button';
-import { PageDots } from '@/components/ui/page-dots';
 import { Screen } from '@/components/ui/screen';
 import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
-import { radius } from '@/constants/theme';
-import { seedCities, seedSelected } from '@/mocks/data';
+import { api, type Id } from '@/lib/backend';
 
 export default function OnboardingScreen() {
-  const [selected, setSelected] = useState(seedSelected);
+  const [selected, setSelected] = useState<{ id: Id<'destinations'>; name: string }[]>([]);
   const [query, setQuery] = useState('');
+  const [search, setSearch] = useState('');
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const addVisit = useMutation(api.places.addVisit);
+  const popular = useQuery(api.destinations.popular, search ? 'skip' : { limit: 20 });
+  const matches = useQuery(api.destinations.search, search ? { query: search, limit: 20 } : 'skip');
+  const places = search ? matches : popular;
 
-  const toggle = (city: string) =>
-    setSelected((current) => (current.includes(city) ? current.filter((name) => name !== city) : [...current, city]));
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(query.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const toggle = (id: Id<'destinations'>, name: string) => {
+    if (savingRef.current) return;
+    setSelected((current) => current.some((place) => place.id === id)
+      ? current.filter((place) => place.id !== id)
+      : current.length < 20 ? [...current, { id, name }] : current);
+  };
+
+  const continueToApp = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      for (const place of selected) await addVisit({ destinationId: place.id });
+      router.replace('/feed');
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
 
   return (
-    <Screen
-      backdrop="onboarding"
-      style={styles.content}
-      overlay={
-        <Glass radius={radius.panel} style={styles.footer}>
-          <View style={styles.footerCopy}>
-            <Text weight="extrabold" style={styles.count}>
-              {selected.length} cities
-            </Text>
-            <Text variant="caption" color="muted">
-              {selected.length < 2 ? 'Pick at least 2 so ranking can start' : 'Enough to seed your first rankings'}
-            </Text>
+    <Screen backdrop="onboarding" scroll>
+      <Text variant="title" accessibilityRole="header">Where have you been?</Text>
+      <Text color="slate">Add cities and islands you’ve visited. Rank them later, in your own order.</Text>
+      <SearchField placeholder="Search places" value={query} onChangeText={setQuery} />
+      <Text variant="cardTitle">{search ? 'Search results' : 'Popular places'}</Text>
+      {places === undefined || query.trim() !== search ? <Notice>Finding places…</Notice> : (
+        <View style={styles.chips}>
+          {places.map((place) => (
+            <Chip
+              key={place._id}
+              label={`${place.name}, ${place.countryCode}`}
+              check
+              selected={selected.some((item) => item.id === place._id)}
+              onPress={() => toggle(place._id, place.name)}
+            />
+          ))}
+          {places.length === 0 && <Notice>No places found. Try another name.</Notice>}
+        </View>
+      )}
+      <Glass style={styles.summary}>
+        <Text variant="cardTitle">{selected.length} of 20 places selected</Text>
+        {selected.length > 0 && (
+          <View style={styles.chips}>
+            {selected.map((place) => (
+              <Chip key={place.id} label={`${place.name} ×`} selected onPress={() => toggle(place.id, place.name)} />
+            ))}
           </View>
-          <Button
-            label="Continue"
-            trailingIcon="arrowRight"
-            height={52}
-            fontSize={15}
-            style={styles.continue}
-            onPress={() => router.replace('/feed')}
-          />
-        </Glass>
-      }>
-      <View style={styles.header}>
-        <IconButton icon="arrowLeft" label="Back" onPress={() => router.back()} />
-        <PageDots count={3} active={1} shape="bars" />
-        <Pressable onPress={() => router.replace('/feed')} accessibilityRole="button" hitSlop={12}>
-          <Text variant="label" weight="semibold" color="slate">
-            Skip
-          </Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.intro}>
-        <Text variant="title" accessibilityRole="header">
-          Where have you been?
-        </Text>
-        <Text color="slate">
-          Pick a few cities. They start your city grid and give the ranker something to compare against.
-        </Text>
-      </View>
-
-      <SearchField placeholder="Search any city" value={query} onChangeText={setQuery} />
-
-      <View style={styles.chips}>
-        {seedCities.map((city) => (
-          <Chip
-            key={city}
-            label={city}
-            size="large"
-            check
-            selected={selected.includes(city)}
-            onPress={() => toggle(city)}
-          />
-        ))}
-      </View>
-
-      <ActionCard icon="photo" title="Import from Photos" subtitle="We read geotags on-device to find past trips" />
+        )}
+        <Text variant="caption" color="muted">Visits are self-reported. If saving is interrupted, retry Continue; already-added visits won’t be duplicated.</Text>
+        {selected.length === 20 && <Notice>You’ve reached the limit for this batch. Add more later.</Notice>}
+        <AsyncButton label="Continue" onPress={continueToApp} />
+        {!saving && <Button label="Skip for now" variant="link" onPress={() => router.replace('/feed')} />}
+      </Glass>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 20 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  intro: { gap: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  footer: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 28,
-    paddingVertical: 14,
-    paddingLeft: 22,
-    paddingRight: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  footerCopy: { flex: 1, gap: 2 },
-  count: { fontSize: 17, lineHeight: 22 },
-  continue: { paddingHorizontal: 22 },
+  summary: { padding: 20, gap: 14 },
 });
