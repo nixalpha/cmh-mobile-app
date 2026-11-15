@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export type SelectProps = {
   label: string;
@@ -30,14 +30,14 @@ export function Select({ label, options, value, onChange }: SelectProps) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, gap: 6 },
+  root: { flex: 1, gap: space.inline },
   field: {
     height: 52,
     borderRadius: radius.field,
     borderWidth: 1,
     borderColor: 'rgba(14,17,22,0.14)',
     backgroundColor: colors.tileStrong,
-    paddingHorizontal: 14,
+    paddingHorizontal: space.inset,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

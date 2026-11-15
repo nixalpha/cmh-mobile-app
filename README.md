@@ -1,56 +1,42 @@
-# Welcome to your Expo app 👋
+# travi
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Collect the places you love. Find your next favorite.
 
-## Get started
+travi is an Expo / React Native travel app for iOS, Android, and the web, with Expo Router navigation and a Convex backend.
 
-1. Install dependencies
+## Development
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+bun install
+bunx convex dev
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Configure `EXPO_PUBLIC_CONVEX_URL` in `.env.local` with your Convex deployment URL, then start the app in another terminal:
 
-### Other setup steps
+```sh
+bunx expo start
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Use `bun run web` for the web app. Native development builds can be created with `bunx eas-cli build --profile development`.
 
-## Learn more
+In development, tap **Dev mode — skip onboarding** on the welcome or sign-in screen (or open `/dev` on web) to go straight to Discover. The shortcut creates a test account for this device/browser, completes its profile, and reuses it on later visits. It uses the configured Convex deployment and the usual authenticated APIs. Sign out from Profile to return to sign-in. The shortcut and `/dev` are disabled in production builds.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Checks
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```sh
+bun run lint
+bun run typecheck
+bun run test
+```
 
-## Join the community
+Routes live in `src/app/`, shared UI in `src/components/`, and backend functions in `convex/`. See [AGENTS.md](AGENTS.md) for project conventions and [the catalog guide](scripts/catalog/README.md) for destination data tooling.
 
-Join our community of developers creating universal apps.
+## Brand and press kit
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The app uses the official travi artwork, compact header logos, Nunito typography, and the logo’s periwinkle accent.
+
+- [Visual press kit](public/press-kit/index.html) — served at `/press-kit/index.html`.
+- [Complete kit ZIP](public/press-kit/travi-press-kit.zip).
+- [Brand asset guide](assets/brand/README.md) and [source / extraction prompt](assets/brand/source/README.md).
+
+Rebuild the logo exports, icons, social graphics, and kit on macOS with `sh scripts/branding/build-brand-assets.sh`.

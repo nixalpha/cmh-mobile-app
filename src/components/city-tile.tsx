@@ -5,6 +5,7 @@ import { Art } from '@/components/ui/art';
 import { Glass } from '@/components/ui/glass';
 import { ProofDot } from '@/components/ui/proof';
 import { Text } from '@/components/ui/text';
+import { radius, space } from '@/constants/theme';
 
 export type CityTileProps = {
   name: string;
@@ -17,7 +18,7 @@ export type CityTileProps = {
 
 export function CityTile({ name, meta, verified, selfReported, art, onPress }: CityTileProps) {
   return (
-    <Glass radius={26} onPress={onPress ?? (() => {})} accessibilityRole="button" style={styles.card}>
+    <Glass radius={radius.card} onPress={onPress ?? (() => {})} accessibilityRole="button" style={styles.card}>
       <Art name={art} height={96} />
       <Text variant="cardTitle">{name}</Text>
       <Text variant="caption" color="muted">
@@ -42,7 +43,7 @@ export function CityTile({ name, meta, verified, selfReported, art, onPress }: C
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, paddingTop: 12, paddingHorizontal: 14, paddingBottom: 14, gap: 6 },
-  counts: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  second: { marginLeft: 6 },
+  card: { flex: 1, paddingTop: space.inset, paddingHorizontal: space.inset, paddingBottom: space.inset, gap: space.inline },
+  counts: { flexDirection: 'row', alignItems: 'center', gap: space.inline },
+  second: { marginLeft: space.inline },
 });

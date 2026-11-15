@@ -5,9 +5,8 @@ import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { LivePosts } from '@/components/live-post';
-import { AsyncButton, Notice, PlaceArt } from '@/components/live-ui';
+import { AsyncIconButton, Notice, PlaceArt } from '@/components/live-ui';
 import { Glass } from '@/components/ui/glass';
-import { Icon } from '@/components/ui/icon';
 import { Screen } from '@/components/ui/screen';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Text } from '@/components/ui/text';
@@ -26,26 +25,12 @@ function reasonLabel(reason: Recommendation['reason']) {
     case 'friends_top': return `In ${reason.count} ${reason.count === 1 ? 'friend’s' : 'friends’'} top places`;
     case 'friends_want': return `${reason.count} ${reason.count === 1 ? 'friend wants' : 'friends want'} to go`;
     case 'similar_to': return `${reason.basis === 'nearby' ? 'Near' : 'Similar to'} ${reason.source.name}`;
-    case 'popular': return 'Popular place to explore';
+    case 'popular': return 'Popular';
   }
 }
 
 export default function FeedScreen() {
   const [tab, setTab] = useState<(typeof segments)[number]['value']>('forYou');
-  return (
-    <Screen backdrop="feed">
-      <View style={styles.brand}>
-        <Icon name="compass" size={24} />
-        <Text variant="title3">Wayfarer</Text>
-      </View>
-      <SegmentedControl segments={segments} value={tab} onChange={setTab} />
-      {tab === 'forYou' ? <ForYou /> : <LivePosts mode="friends" />}
-    </Screen>
-  );
-}
-
-function ForYou() {
-  const recommendations = useQuery(api.recommendations.forYou, {});
   const refresh = useMutation(api.recommendations.refresh);
   const [refreshError, setRefreshError] = useState(false);
 
@@ -56,24 +41,37 @@ function ForYou() {
   }, [refresh]);
 
   return (
+    <Screen backdrop="feed" headerActions={tab === 'forYou' && (
+        <AsyncIconButton
+          icon="refresh"
+          label="Refresh recommendations"
+          onError={() => setRefreshError(true)}
+          onPress={async () => {
+            await refresh({});
+            setRefreshError(false);
+          }}
+        />
+      )}>
+      <SegmentedControl segments={segments} value={tab} onChange={setTab} />
+      {tab === 'forYou' ? <ForYou refreshError={refreshError} /> : <LivePosts mode="friends" />}
+    </Screen>
+  );
+}
+
+function ForYou({ refreshError }: { refreshError: boolean }) {
+  const recommendations = useQuery(api.recommendations.forYou, {});
+
+  return (
     <FlatList
       data={recommendations?.items ?? []}
       keyExtractor={(item) => item.destination._id}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.list}
-      ListHeaderComponent={
-        <View style={styles.stack}>
-          {refreshError && <Notice>Couldn’t refresh. Try again.</Notice>}
-          <AsyncButton label="Refresh" variant="link" onPress={async () => {
-            await refresh({});
-            setRefreshError(false);
-          }} />
-        </View>
-      }
+      ListHeaderComponent={refreshError ? <Notice>Couldn’t refresh. Try again.</Notice> : undefined}
       ListEmptyComponent={
         <Notice>{recommendations === undefined || (recommendations.computedAt === null && !refreshError)
           ? 'Finding places for you…'
-          : 'Nothing yet. Rank places or add friends.'}</Notice>
+          : 'Rank places or add friends for recommendations.'}</Notice>
       }
       renderItem={({ item, index }) => (
         <Glass
@@ -95,9 +93,7 @@ function ForYou() {
 }
 
 const styles = StyleSheet.create({
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stack: { gap: 10 },
-  list: { gap: 16, paddingBottom: space.scrollBottom },
+  list: { gap: space.stack, paddingBottom: space.scrollBottom },
   card: { overflow: 'hidden' },
-  copy: { padding: 18, gap: 6 },
+  copy: { padding: space.inset, gap: space.inline },
 });

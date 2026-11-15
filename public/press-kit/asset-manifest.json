@@ -1,0 +1,165 @@
+{
+  "brand": "travi",
+  "assets": [
+    {
+      "file": "logos/travi-logo-color.png",
+      "format": "png",
+      "width": 2400,
+      "height": 886,
+      "transparent": true
+    },
+    {
+      "file": "logos/travi-logo-color.svg",
+      "format": "svg"
+    },
+    {
+      "file": "logos/travi-logo-dark.png",
+      "format": "png",
+      "width": 2400,
+      "height": 886,
+      "transparent": true
+    },
+    {
+      "file": "logos/travi-logo-dark.svg",
+      "format": "svg"
+    },
+    {
+      "file": "logos/travi-logo-white.png",
+      "format": "png",
+      "width": 2400,
+      "height": 886,
+      "transparent": true
+    },
+    {
+      "file": "logos/travi-logo-white.svg",
+      "format": "svg"
+    },
+    {
+      "file": "logos/travi-mark-color.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": true
+    },
+    {
+      "file": "logos/travi-mark-color.svg",
+      "format": "svg"
+    },
+    {
+      "file": "logos/travi-mark-dark.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": true
+    },
+    {
+      "file": "logos/travi-mark-dark.svg",
+      "format": "svg"
+    },
+    {
+      "file": "logos/travi-mark-white.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": true
+    },
+    {
+      "file": "logos/travi-mark-white.svg",
+      "format": "svg"
+    },
+    {
+      "file": "icons/apple-touch-icon.png",
+      "format": "png",
+      "width": 180,
+      "height": 180,
+      "transparent": false
+    },
+    {
+      "file": "icons/travi-android-background.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": false
+    },
+    {
+      "file": "icons/travi-android-foreground.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": true
+    },
+    {
+      "file": "icons/travi-android-monochrome.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": true
+    },
+    {
+      "file": "icons/travi-app-icon-1024.png",
+      "format": "png",
+      "width": 1024,
+      "height": 1024,
+      "transparent": false
+    },
+    {
+      "file": "social/travi-header-1500x500.png",
+      "format": "png",
+      "width": 1500,
+      "height": 500,
+      "transparent": false
+    },
+    {
+      "file": "social/travi-social-card-1200x630.png",
+      "format": "png",
+      "width": 1200,
+      "height": 630,
+      "transparent": false
+    },
+    {
+      "file": "social/travi-social-square-1080.png",
+      "format": "png",
+      "width": 1080,
+      "height": 1080,
+      "transparent": false
+    },
+    {
+      "file": "social/travi-story-1080x1920.png",
+      "format": "png",
+      "width": 1080,
+      "height": 1920,
+      "transparent": false
+    },
+    {
+      "file": "fonts/Nunito-Bold.ttf",
+      "format": "ttf"
+    },
+    {
+      "file": "fonts/Nunito-ExtraBold.ttf",
+      "format": "ttf"
+    },
+    {
+      "file": "fonts/Nunito-Medium.ttf",
+      "format": "ttf"
+    },
+    {
+      "file": "fonts/Nunito-Regular.ttf",
+      "format": "ttf"
+    },
+    {
+      "file": "fonts/Nunito-SemiBold.ttf",
+      "format": "ttf"
+    },
+    {
+      "file": "fonts/OFL.txt",
+      "format": "txt"
+    },
+    {
+      "file": "screenshots/travi-feed-mobile.png",
+      "format": "png",
+      "width": 780,
+      "height": 1688,
+      "transparent": false
+    }
+  ]
+}

@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { personName } from '@/components/live-post';
-import { AsyncButton, Notice } from '@/components/live-ui';
+import { AsyncButton, AsyncIconButton, Notice } from '@/components/live-ui';
 import { Glass } from '@/components/ui/glass';
+import { IconButton } from '@/components/ui/icon-button';
 import { Text } from '@/components/ui/text';
-import { colors, fonts, radius } from '@/constants/theme';
+import { colors, fonts, radius, space } from '@/constants/theme';
 import { api } from '@/lib/backend';
 
 export function FriendManager() {
@@ -16,10 +17,13 @@ export function FriendManager() {
   const incoming = usePaginatedQuery(api.friends.incomingRequests, {}, { initialNumItems: 10 });
   const send = useMutation(api.friends.sendRequest);
   const respond = useMutation(api.friends.respondToRequest);
+  const [error, setError] = useState('');
+  const run = (action: () => Promise<unknown>) => async () => { setError(''); await action(); };
 
   return (
     <Glass radius={radius.panel} style={styles.card}>
-      <Text variant="heading">Find your people</Text>
+      <Text variant="heading">Find friends</Text>
+      <View style={styles.searchRow}>
       <TextInput
         accessibilityLabel="Search people by name or handle"
         placeholder="Name or handle"
@@ -32,17 +36,22 @@ export function FriendManager() {
         returnKeyType="search"
         style={styles.input}
       />
-      <AsyncButton label="Search people" variant="secondary" onPress={async () => setSearch(text.trim())} />
+      <IconButton icon="search" label="Search people" onPress={() => setSearch(text.trim())} />
+      </View>
+      {!!error && <Notice>{error}</Notice>}
       {!!search && people === undefined && <Notice>Searching people…</Notice>}
       {!!search && people?.length === 0 && <Notice>No people found. Try another name or handle.</Notice>}
       {people?.map((person) => (
         <View key={person._id} style={styles.person}>
-          <Text variant="label">{personName(person)}</Text>
-          {person.handle && <Text variant="caption" color="muted">@{person.handle}</Text>}
-          {person.relationship === 'none'
-            ? <AsyncButton label={`Add ${personName(person)}`} variant="secondary" onPress={() => send({ userId: person._id })} />
-            : <Text variant="meta" color="muted">{person.relationship === 'friends' ? 'Friends'
+          <View style={styles.personCopy}>
+            <Text variant="label">{personName(person)}</Text>
+            {person.handle && <Text variant="caption" color="muted">@{person.handle}</Text>}
+            {person.relationship !== 'none' && <Text variant="meta" color="muted">{person.relationship === 'friends' ? 'Friends'
               : person.relationship === 'outgoing' ? 'Request sent' : 'Incoming request · respond below'}</Text>}
+          </View>
+          {person.relationship === 'none' && (
+            <AsyncIconButton icon="userPlus" label={`Add ${personName(person)}`} onError={setError} onPress={run(() => send({ userId: person._id }))} />
+          )}
         </View>
       ))}
       <Text variant="subheading">Incoming requests</Text>
@@ -50,10 +59,10 @@ export function FriendManager() {
       {incoming.status !== 'LoadingFirstPage' && incoming.results.length === 0 && <Notice>No incoming requests.</Notice>}
       {incoming.results.map((request) => (
         <View key={request._id} style={styles.person}>
-          <Text variant="label">{personName(request.user)}</Text>
+          <Text variant="label" style={styles.personCopy}>{personName(request.user)}</Text>
           <View style={styles.actions}>
-            <AsyncButton label="Accept" onPress={() => respond({ requestId: request._id, accept: true })} />
-            <AsyncButton label="Decline" variant="secondary" onPress={() => respond({ requestId: request._id, accept: false })} />
+            <AsyncIconButton icon="check" variant="ink" label={`Accept ${personName(request.user)}`} onError={setError} onPress={run(() => respond({ requestId: request._id, accept: true }))} />
+            <AsyncIconButton icon="close" label={`Decline ${personName(request.user)}`} onError={setError} onPress={run(() => respond({ requestId: request._id, accept: false }))} />
           </View>
         </View>
       ))}
@@ -64,8 +73,10 @@ export function FriendManager() {
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 18, gap: 14 },
-  input: { backgroundColor: colors.tile, color: colors.ink, fontFamily: fonts.regular, borderRadius: radius.field, padding: 14, fontSize: 15, minHeight: 48 },
-  person: { gap: 6, paddingVertical: 8 },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  card: { padding: space.inset, gap: space.stack },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: space.stack },
+  input: { flex: 1, backgroundColor: colors.tile, color: colors.ink, fontFamily: fonts.regular, borderRadius: radius.field, padding: space.inset, fontSize: 15, minHeight: 48 },
+  person: { flexDirection: 'row', alignItems: 'center', gap: space.stack, paddingVertical: space.inline },
+  personCopy: { flex: 1, gap: space.inline },
+  actions: { flexDirection: 'row', gap: space.stack },
 });

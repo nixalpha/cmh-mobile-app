@@ -11,6 +11,7 @@ import { Screen } from '@/components/ui/screen';
 import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
 import { api, type Id } from '@/lib/backend';
+import { space } from '@/constants/theme';
 
 export default function OnboardingScreen() {
   const [selected, setSelected] = useState<{ id: Id<'destinations'>; name: string }[]>([]);
@@ -76,15 +77,14 @@ export default function OnboardingScreen() {
             ))}
           </View>
         )}
-        {selected.length === 20 && <Notice>That’s the max for now.</Notice>}
         <AsyncButton label="Continue" onPress={continueToApp} />
-        {!saving && <Button label="Skip for now" variant="link" onPress={() => router.replace('/feed')} />}
+        {!saving && <Button label="Skip" variant="link" onPress={() => router.replace('/feed')} />}
       </Glass>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  summary: { padding: 20, gap: 14 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.stack },
+  summary: { padding: space.inset, gap: space.stack },
 });

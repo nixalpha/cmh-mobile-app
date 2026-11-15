@@ -5,15 +5,17 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { Notice, PlaceArt } from '@/components/live-ui';
 import { Button } from '@/components/ui/button';
 import { Glass } from '@/components/ui/glass';
+import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { api } from '@/lib/backend';
+import { space } from '@/constants/theme';
 
 export default function CitiesScreen() {
   const { results, status, loadMore } = usePaginatedQuery(api.places.visits, {}, { initialNumItems: 20 });
 
   return (
-    <Screen backdrop="cities">
+    <Screen backdrop="cities" headerActions={<IconButton icon="plus" label="Add a past trip" onPress={() => router.push('/onboarding')} />}>
       <FlatList
         data={results}
         keyExtractor={(item) => item.destination._id}
@@ -24,7 +26,6 @@ export default function CitiesScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Text variant="title" accessibilityRole="header">Your places</Text>
-            <Button label="Add a past trip" icon="plus" onPress={() => router.push('/onboarding')} />
           </View>
         }
         renderItem={({ item }) => (
@@ -55,10 +56,10 @@ export default function CitiesScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingBottom: 140, gap: 12 },
-  header: { gap: 12, marginBottom: 8 },
-  row: { gap: 12 },
+  list: { paddingBottom: space.scrollBottom, gap: space.stack },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.stack, marginBottom: space.stack },
+  row: { gap: space.stack },
   card: { flex: 1, maxWidth: '49%', overflow: 'hidden' },
-  copy: { padding: 14, gap: 4 },
-  footer: { marginTop: 8 },
+  copy: { padding: space.inset, gap: space.inline },
+  footer: { marginTop: space.stack },
 });

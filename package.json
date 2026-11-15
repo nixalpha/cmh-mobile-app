@@ -1,15 +1,17 @@
 {
-  "name": "cmh-mobile-app",
+  "name": "travi",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@convex-dev/auth": "2.0.0",
-    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
+    "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/ui": "~58.0.28",
     "convex": "^1.50.0",
+    "d3-geo": "^3.1.2",
     "expo": "~58.0.25",
     "expo-blur": "~58.0.6",
     "expo-constants": "~58.0.16",
+    "expo-crypto": "~58.0.8",
     "expo-dev-client": "~58.0.20",
     "expo-font": "~58.0.12",
     "expo-glass-effect": "~58.0.5",
@@ -29,16 +31,26 @@
     "react-native-screens": "~4.30.1",
     "react-native-svg": "15.16.0",
     "react-native-web": "~0.21.4",
+    "react-native-webview": "14.0.1",
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
+    "@mapbox/vector-tile": "^3.0.0",
+    "@types/d3-geo": "^3.1.1",
+    "@types/earcut": "^3.2.4",
     "@types/node": "^26.6.6",
+    "@types/pbf": "^3.0.5",
     "@types/react": "~19.3.0",
+    "@types/three": "^0.187.0",
     "convex-test": "^0.0.71",
+    "earcut": "^3.2.4",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
+    "pbf": "^5.1.2",
+    "three": "^0.187.0",
     "typescript": "~6.0.3",
+    "vite": "^8.3.8",
     "vitest": "^5.1.0"
   },
   "scripts": {
@@ -49,9 +61,10 @@
     "lint": "expo lint",
     "convex:dev": "convex dev",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/catalog",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/catalog && tsc --noEmit -p modules/cartoon-globe",
     "catalog:build": "bun scripts/catalog/build.ts",
-    "catalog:load": "bun scripts/catalog/load.ts"
+    "catalog:load": "bun scripts/catalog/load.ts",
+    "globe:build": "bun modules/cartoon-globe/build.ts"
   },
   "private": true
 }

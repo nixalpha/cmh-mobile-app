@@ -5,7 +5,7 @@ import { Art } from '@/components/ui/art';
 import { CountDot } from '@/components/ui/badge';
 import { Glass } from '@/components/ui/glass';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export type ScorePinProps = {
   label: string;
@@ -28,7 +28,7 @@ export function ScorePin({ label, score, mine, cluster, onPress, style }: ScoreP
       ) : (
         <CountDot label={score} size={26} inverted={mine} />
       )}
-      <Text variant="caption" weight="bold" color={mine ? 'white' : 'ink'}>
+      <Text variant="caption" weight="bold" color="ink">
         {label}
       </Text>
     </>
@@ -41,7 +41,7 @@ export function ScorePin({ label, score, mine, cluster, onPress, style }: ScoreP
     );
   }
   return (
-    <Glass radius={17} onPress={onPress ?? (() => {})} accessibilityRole="button" style={[styles.score, style]}>
+    <Glass radius={radius.card} onPress={onPress ?? (() => {})} accessibilityRole="button" style={[styles.score, style]}>
       {content}
     </Glass>
   );
@@ -50,7 +50,7 @@ export function ScorePin({ label, score, mine, cluster, onPress, style }: ScoreP
 export function GlobePin({ name, art, onPress, style }: { name: string; art: ArtName; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={name} style={[styles.globe, style]}>
-      <Glass radius={14} style={styles.globeLabel}>
+      <Glass radius={radius.card} style={styles.globeLabel}>
         <Art name={art} width={20} height={20} />
         <Text variant="caption" weight="bold">
           {name}
@@ -65,14 +65,14 @@ const styles = StyleSheet.create({
   score: {
     position: 'absolute',
     height: 34,
-    paddingLeft: 4,
-    paddingRight: 12,
-    borderRadius: 17,
+    paddingLeft: space.inline,
+    paddingRight: space.inset,
+    borderRadius: radius.card,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: space.inline,
   },
-  mine: { backgroundColor: colors.ink },
+  mine: { backgroundColor: colors.accent },
   cluster: {
     width: 26,
     height: 26,
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   clusterText: { fontSize: 11, lineHeight: 16 },
-  globe: { position: 'absolute', alignItems: 'center', gap: 4 },
-  globeLabel: { height: 28, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  stem: { width: 2, height: 10, borderRadius: 1, backgroundColor: colors.ink },
+  globe: { position: 'absolute', alignItems: 'center', gap: space.inline },
+  globeLabel: { height: 28, paddingHorizontal: space.inset, flexDirection: 'row', alignItems: 'center', gap: space.inline },
+  stem: { width: 2, height: 10, borderRadius: 1, backgroundColor: colors.accent },
 });

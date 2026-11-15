@@ -1,7 +1,7 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, space } from '@/constants/theme';
 
 export type AvatarProps = {
   initials: string;
@@ -39,6 +39,6 @@ export function AvatarStack({ people, size = 36 }: { people: readonly { initials
 
 const styles = StyleSheet.create({
   base: { alignItems: 'center', justifyContent: 'center', borderColor: colors.white },
-  stack: { flexDirection: 'row', paddingLeft: 8 },
+  stack: { flexDirection: 'row', paddingLeft: space.stack },
   overlap: { marginLeft: -8 },
 });

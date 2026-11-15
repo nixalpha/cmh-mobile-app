@@ -4,7 +4,7 @@ import { StyleSheet, TextInput, type StyleProp, type ViewStyle } from 'react-nat
 import { Glass } from '@/components/ui/glass';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { colors, fonts } from '@/constants/theme';
+import { colors, fonts, radius, space } from '@/constants/theme';
 
 export type SearchFieldProps = {
   placeholder: string;
@@ -27,7 +27,7 @@ export function SearchField({
 }: SearchFieldProps) {
   return (
     <Glass
-      radius={height / 2}
+      radius={radius.card}
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : 'search'}
       style={[styles.field, { height }, trailing !== undefined && styles.withTrailing, style]}>
@@ -52,8 +52,8 @@ export function SearchField({
 }
 
 const styles = StyleSheet.create({
-  field: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18 },
-  withTrailing: { paddingRight: 8 },
+  field: { flexDirection: 'row', alignItems: 'center', gap: space.stack, paddingHorizontal: space.inset },
+  withTrailing: { paddingRight: space.stack },
   input: { flex: 1 },
   text: { fontFamily: fonts.regular, fontSize: 15, color: colors.ink, padding: 0 },
   filled: { fontFamily: fonts.semibold },

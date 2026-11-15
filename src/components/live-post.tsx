@@ -1,10 +1,10 @@
 import { useMutation, usePaginatedQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
 import { router } from 'expo-router';
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
-import { AsyncButton, Notice, PlaceArt } from '@/components/live-ui';
+import { AsyncButton, AsyncIconButton, Notice, PlaceArt } from '@/components/live-ui';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Glass } from '@/components/ui/glass';
@@ -27,6 +27,7 @@ export function LivePost({ post }: { post: Post }) {
   const like = useMutation(api.feed.like);
   const unlike = useMutation(api.feed.unlike);
   const placeName = post.landmark?.name ?? post.destination.name;
+  const [likeError, setLikeError] = useState('');
 
   return (
     <Glass radius={radius.panel} style={styles.post}>
@@ -42,7 +43,7 @@ export function LivePost({ post }: { post: Post }) {
       </View>
       <Glass
         flat
-        radius={20}
+        radius={radius.card}
         accessibilityRole="button"
         accessibilityLabel={`Explore ${post.destination.name}`}
         onPress={() => router.push({ pathname: '/place/[id]', params: { id: post.destination._id } })}
@@ -67,13 +68,22 @@ export function LivePost({ post }: { post: Post }) {
         <Text variant="meta" color="muted">{post.unlock.unlockedCount} of {post.unlock.landmarkTotal} landmarks</Text>
       )}
       <View style={styles.actions}>
-        <AsyncButton
-          label={`${post.likedByViewer ? 'Unlike' : 'Like'} · ${post.likeCount}`}
-          variant="secondary"
-          onPress={() => (post.likedByViewer ? unlike : like)({ activityId: post._id })}
+        <AsyncIconButton
+          icon={post.likedByViewer ? 'heartFilled' : 'heart'}
+          variant="plain"
+          size={36}
+          label={`${post.likedByViewer ? 'Unlike' : 'Like'}, ${post.likeCount} ${post.likeCount === 1 ? 'like' : 'likes'}`}
+          selected={post.likedByViewer}
+          onError={setLikeError}
+          onPress={async () => {
+            setLikeError('');
+            await (post.likedByViewer ? unlike : like)({ activityId: post._id });
+          }}
         />
-        <Text variant="meta" color="muted">{post.commentCount} {post.commentCount === 1 ? 'comment' : 'comments'}</Text>
+        <Text variant="meta" weight="bold" accessible={false}>{post.likeCount}</Text>
+        <Text variant="meta" color="muted" style={styles.comments}>{post.commentCount} {post.commentCount === 1 ? 'comment' : 'comments'}</Text>
       </View>
+      {!!likeError && <Notice>{likeError}</Notice>}
     </Glass>
   );
 }
@@ -97,8 +107,8 @@ export function LivePosts({ mode, actorId, header }: {
       contentContainerStyle={styles.list}
       ListEmptyComponent={<Notice>{posts.status === 'LoadingFirstPage'
         ? 'Loading posts…'
-        : mode === 'mine' ? 'Your rankings, saves, and unlocks will appear here.'
-          : 'No posts here yet. Add friends or check back after they share a place.'}</Notice>}
+        : mode === 'mine' ? 'Your rankings, saves, and landmarks appear here.'
+          : 'No posts from friends yet.'}</Notice>}
       ListFooterComponent={posts.status === 'CanLoadMore'
         ? <AsyncButton label="Load more posts" variant="secondary" onPress={async () => posts.loadMore(10)} />
         : posts.status === 'LoadingMore' ? <Notice>Loading more posts…</Notice> : undefined}
@@ -107,13 +117,14 @@ export function LivePosts({ mode, actorId, header }: {
 }
 
 const styles = StyleSheet.create({
-  list: { gap: 16, paddingBottom: space.scrollBottom },
-  post: { padding: 14, gap: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  copy: { flex: 1, gap: 6 },
+  list: { gap: space.stack, paddingBottom: space.scrollBottom },
+  post: { padding: space.inset, gap: space.stack },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.stack },
+  copy: { flex: 1, gap: space.inline },
   place: { overflow: 'hidden' },
-  placeLabel: { padding: 12 },
-  pair: { padding: 12, borderRadius: 16, backgroundColor: colors.tile, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  placeLabel: { padding: space.inset },
+  pair: { padding: space.inset, borderRadius: radius.card, backgroundColor: colors.tile, flexDirection: 'row', alignItems: 'center', gap: space.stack },
   side: { flex: 1 },
-  actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: space.inline },
+  comments: { marginLeft: space.stack },
 });

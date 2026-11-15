@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-nat
 import { Glass } from '@/components/ui/glass';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export type Segment<T extends string> = { value: T; label: string; icon?: IconName };
 
@@ -23,10 +23,10 @@ export function SegmentedControl<T extends string>({
   style,
 }: SegmentedControlProps<T>) {
   return (
-    <Glass radius={layout === 'fill' ? 24 : layout === 'icons' ? 25 : 22} style={[styles.track, layout !== 'fill' && styles.tight, style]}>
+    <Glass radius={radius.field} style={[styles.track, layout !== 'fill' && styles.tight, style]}>
       {segments.map((segment) => {
         const selected = segment.value === value;
-        const tint = selected ? colors.white : colors.slate;
+        const tint = selected ? colors.accentForeground : colors.slate;
         return (
           <Pressable
             key={segment.value}
@@ -56,12 +56,12 @@ export function SegmentedControl<T extends string>({
 }
 
 const styles = StyleSheet.create({
-  track: { flexDirection: 'row', padding: 4, gap: 4 },
-  tight: { gap: 2 },
-  segment: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  fill: { flex: 1, height: 40, borderRadius: 20 },
-  compact: { height: 36, paddingHorizontal: 14, borderRadius: 18 },
-  icons: { width: 42, height: 42, borderRadius: 21 },
-  selected: { backgroundColor: colors.ink },
+  track: { flexDirection: 'row', padding: space.inline, gap: space.inline },
+  tight: { gap: space.fine },
+  segment: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.inline },
+  fill: { flex: 1, height: 40, borderRadius: radius.inner },
+  compact: { height: 36, paddingHorizontal: space.inset, borderRadius: radius.inner },
+  icons: { width: 42, height: 42, borderRadius: radius.inner },
+  selected: { backgroundColor: colors.accent },
   compactLabel: { fontSize: 13, lineHeight: 18 },
 });

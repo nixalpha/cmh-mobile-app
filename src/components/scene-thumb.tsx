@@ -1,11 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 
 import type { Scene } from '@/mocks/data';
+import { radius } from '@/constants/theme';
 
 export function SceneThumb({ sky, ground, mark, size = 64 }: Scene & { size?: number }) {
   const unit = size / 64;
   return (
-    <View style={[styles.thumb, { width: size, height: size, borderRadius: size / 4, backgroundColor: sky }]}>
+    <View style={[styles.thumb, { width: size, height: size, borderRadius: radius.tile, backgroundColor: sky }]}>
       <View style={[styles.ground, { height: 28 * unit, backgroundColor: ground }]} />
       <View
         style={[

@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-nat
 import { Glass } from '@/components/ui/glass';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export type ChipProps = {
   label: string;
@@ -18,8 +18,8 @@ export type ChipProps = {
 };
 
 const sizes = {
-  small: { height: 36, paddingHorizontal: 14, fontSize: 13, weight: 'bold' },
-  large: { height: 44, paddingHorizontal: 16, fontSize: 14, weight: 'semibold' },
+  small: { height: 36, paddingHorizontal: space.inset, fontSize: 13, weight: 'bold' },
+  large: { height: 44, paddingHorizontal: space.inset, fontSize: 14, weight: 'semibold' },
 } as const;
 
 export function Chip({
@@ -37,7 +37,7 @@ export function Chip({
     styles.base,
     {
       height: metrics.height,
-      borderRadius: metrics.height / 2,
+      borderRadius: radius.control,
       paddingHorizontal: metrics.paddingHorizontal,
     },
     leading !== undefined && styles.withLeading,
@@ -45,11 +45,11 @@ export function Chip({
   const content = (
     <>
       {leading}
-      {check && selected && <Icon name="check" size={16} color={colors.white} strokeWidth={2.5} />}
+      {check && selected && <Icon name="check" size={16} color={colors.accentForeground} strokeWidth={2.5} />}
       <Text
         weight={metrics.weight}
         style={{ fontSize: metrics.fontSize, lineHeight: metrics.fontSize * 1.4 }}
-        color={selected ? 'white' : 'ink'}>
+        color="ink">
         {label}
       </Text>
     </>
@@ -68,7 +68,7 @@ export function Chip({
   return (
     <Glass
       flat
-      radius={metrics.height / 2}
+      radius={radius.card}
       onPress={onPress ?? (() => {})}
       accessibilityRole="button"
       accessibilityState={{ selected: false }}
@@ -79,8 +79,8 @@ export function Chip({
 }
 
 const styles = StyleSheet.create({
-  base: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  withLeading: { paddingLeft: 6, paddingRight: 12 },
-  selected: { backgroundColor: colors.ink },
+  base: { flexDirection: 'row', alignItems: 'center', gap: space.stack },
+  withLeading: { paddingLeft: space.inline, paddingRight: space.inset },
+  selected: { backgroundColor: colors.accent },
   tile: { backgroundColor: colors.tileStrong },
 });

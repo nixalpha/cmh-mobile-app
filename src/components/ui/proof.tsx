@@ -1,7 +1,7 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, space } from '@/constants/theme';
 
 export function ProofDot({ verified = true, style }: { verified?: boolean; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.dot, verified ? styles.filled : styles.hollow, style]} />;
@@ -28,8 +28,8 @@ export function ProofLegend() {
 
 const styles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4 },
-  filled: { backgroundColor: colors.ink },
+  filled: { backgroundColor: colors.accent },
   hollow: { borderWidth: 2, borderColor: colors.ink },
-  legend: { flexDirection: 'row', gap: 14 },
-  item: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legend: { flexDirection: 'row', gap: space.stack },
+  item: { flexDirection: 'row', alignItems: 'center', gap: space.inline },
 });

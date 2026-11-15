@@ -5,9 +5,11 @@ import { StyleSheet, View } from 'react-native';
 import type { ArtName } from '@/art';
 import { Art } from '@/components/ui/art';
 import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
+import type { IconName } from '@/components/ui/icon';
+import { IconButton, type IconButtonProps } from '@/components/ui/icon-button';
+import { BrandLogo } from '@/components/brand-logo';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export function errorMessage(error: unknown) {
   if (error instanceof ConvexError && typeof error.data === 'object' && error.data !== null && 'message' in error.data) {
@@ -44,6 +46,39 @@ export function AsyncButton({ label, onPress, variant = 'primary', disabled = fa
   );
 }
 
+// Compact action: an icon with an accessible label. Errors go to onError so the
+// caller can show them where they fit instead of under the icon.
+export function AsyncIconButton({ icon, label, onPress, onError, variant = 'glass', size, selected, disabled = false }: {
+  icon: IconName;
+  label: string;
+  onPress: () => Promise<unknown>;
+  onError?: (message: string) => void;
+  variant?: IconButtonProps['variant'];
+  size?: number;
+  selected?: boolean;
+  disabled?: boolean;
+}) {
+  const locked = useRef(false);
+  const [pending, setPending] = useState(false);
+  return (
+    <IconButton
+      icon={icon}
+      label={label}
+      variant={variant}
+      size={size}
+      selected={selected}
+      disabled={disabled || pending}
+      onPress={async () => {
+        if (locked.current) return;
+        locked.current = true;
+        setPending(true);
+        try { await onPress(); } catch (cause) { onError?.(errorMessage(cause)); }
+        finally { locked.current = false; setPending(false); }
+      }}
+    />
+  );
+}
+
 const artwork: Record<string, ArtName> = {
   'Paris|FR': 'tileParis', 'Tokyo|JP': 'tileTokyo', 'Rome|IT': 'tileRome', 'New York City|US': 'tileNewYork',
   'Reykjavík|IS': 'tileReykjavik', 'Lisbon|PT': 'tileLisbon', 'Kyoto|JP': 'kyotoCard',
@@ -54,12 +89,12 @@ export function PlaceArt({ place, height = 140 }: { place?: { name: string; coun
   const name = place ? artwork[`${place.name}|${place.countryCode}`] : undefined;
   return (
     <View style={[styles.art, { height }]} accessible={false}>
-      {name ? <Art name={name} /> : <Icon name="compass" size={48} color={colors.slate} />}
+      {name ? <Art name={name} /> : <BrandLogo symbol height={32} decorative />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  action: { gap: 6 },
-  art: { borderRadius: 22, overflow: 'hidden', backgroundColor: '#DCE6EB', alignItems: 'center', justifyContent: 'center' },
+  action: { gap: space.inline },
+  art: { borderRadius: radius.card, overflow: 'hidden', backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
 });

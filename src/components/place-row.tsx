@@ -4,6 +4,7 @@ import { SceneThumb } from '@/components/scene-thumb';
 import { Badge } from '@/components/ui/badge';
 import { Text } from '@/components/ui/text';
 import type { Scene } from '@/mocks/data';
+import { space } from '@/constants/theme';
 
 export type PlaceRowProps = Scene & { name: string; meta: string; score: string; onPress?: () => void };
 
@@ -23,6 +24,6 @@ export function PlaceRow({ name, meta, score, onPress, ...scene }: PlaceRowProps
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  copy: { flex: 1, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.stack },
+  copy: { flex: 1, gap: space.fine },
 });
