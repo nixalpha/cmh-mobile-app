@@ -244,7 +244,7 @@ export const forYou = query({
           )
           .unique(),
       ]);
-      if (destination === null || visit !== null || saved !== null) continue;
+      if (destination === null || destination.status !== "active" || visit !== null || saved !== null) continue;
       const base = { destination: toDestination(destination), score: row.score };
       const reason = row.reason;
       if (reason.kind === "friends_top") {

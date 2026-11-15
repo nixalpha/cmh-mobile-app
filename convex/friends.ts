@@ -7,6 +7,7 @@ import { mutation, query, type MutationCtx } from "./_generated/server";
 import { notify } from "./lib/activities";
 import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
+import { invalidateRecommendations } from "./lib/recommendations";
 import {
   areFriends,
   getBlock,
@@ -25,6 +26,8 @@ async function befriend(ctx: MutationCtx, a: Doc<"users">, b: Doc<"users">) {
   await ctx.db.insert("friendships", { userId: b._id, friendId: a._id });
   await ctx.db.patch("users", a._id, { friendCount: a.friendCount + 1 });
   await ctx.db.patch("users", b._id, { friendCount: b.friendCount + 1 });
+  await invalidateRecommendations(ctx, a._id);
+  await invalidateRecommendations(ctx, b._id);
   await ctx.scheduler.runAfter(0, internal.feed.backfill, { ownerId: a._id, actorId: b._id });
   await ctx.scheduler.runAfter(0, internal.feed.backfill, { ownerId: b._id, actorId: a._id });
 }
@@ -38,6 +41,8 @@ async function unfriendPair(ctx: MutationCtx, a: Doc<"users">, bId: Id<"users">)
   const b = await ctx.db.get("users", bId);
   await ctx.db.delete("friendships", ab._id);
   await ctx.db.delete("friendships", ba._id);
+  await invalidateRecommendations(ctx, a._id);
+  await invalidateRecommendations(ctx, bId);
   await ctx.db.patch("users", a._id, { friendCount: Math.max(0, a.friendCount - 1) });
   if (b !== null) {
     await ctx.db.patch("users", bId, { friendCount: Math.max(0, b.friendCount - 1) });

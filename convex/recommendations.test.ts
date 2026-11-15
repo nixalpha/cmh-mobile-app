@@ -129,3 +129,30 @@ test("signed-out callers get no recommendations", async () => {
   await expect(t.query(api.recommendations.forYou, {})).rejects.toThrow(/UNAUTHENTICATED/);
   await expect(t.mutation(api.recommendations.refresh, {})).rejects.toThrow(/UNAUTHENTICATED/);
 });
+
+test("unfriending and blocking clear cached social reasons before recomputation", async () => {
+  for (const action of [api.friends.unfriend, api.friends.block]) {
+    const t = setup();
+    const ids = await seedCatalog(t);
+    const sam = await signUp(t, "sam");
+    const maya = await signUp(t, "maya");
+    await befriend(sam, maya);
+    await rank(maya, ids.Kyoto);
+    await settle(t);
+    expect(await picks(sam)).toContainEqual(["Kyoto", "friends_top"]);
+    await sam.as.mutation(action, { userId: maya.id });
+    expect(await picks(sam)).toEqual([]);
+    await settle(t);
+    expect(await picks(sam)).toContainEqual(["Kyoto", "popular"]);
+  }
+});
+
+test("retired destinations disappear from cached recommendations immediately", async () => {
+  const t = setup();
+  const ids = await seedCatalog(t);
+  const sam = await signUp(t, "sam");
+  await sam.as.mutation(api.recommendations.refresh, {});
+  await settle(t);
+  await t.run((ctx) => ctx.db.patch("destinations", ids.Lisbon, { status: "retired" }));
+  expect((await picks(sam)).map(([name]) => name)).not.toContain("Lisbon");
+});

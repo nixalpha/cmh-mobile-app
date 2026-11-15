@@ -5,6 +5,15 @@ import type { MutationCtx } from "../_generated/server";
 export const STALE_AFTER_MS = 12 * 60 * 60 * 1000;
 const DEBOUNCE_MS = 5000;
 
+export async function invalidateRecommendations(ctx: MutationCtx, userId: Id<"users">) {
+  const rows = await ctx.db
+    .query("recommendations")
+    .withIndex("by_userId_and_score", (q) => q.eq("userId", userId))
+    .take(200);
+  for (const row of rows) await ctx.db.delete("recommendations", row._id);
+  await scheduleRecompute(ctx, userId);
+}
+
 export async function scheduleRecompute(
   ctx: MutationCtx,
   userId: Id<"users">,
