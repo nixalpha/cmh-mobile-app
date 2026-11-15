@@ -6,7 +6,8 @@ export type ErrorCode =
   | "NOT_FOUND"
   | "INVALID"
   | "CONFLICT"
-  | "LIMIT_REACHED";
+  | "LIMIT_REACHED"
+  | "LIST_CHANGED";
 
 export function fail(code: ErrorCode, message: string): never {
   throw new ConvexError({ code, message });

@@ -9,6 +9,14 @@ export const destinationKind = v.union(
   v.literal("site"),
 );
 
+export const rankedList = v.union(v.literal("destinations"), v.literal("landmarks"));
+
+export const verification = v.union(
+  v.literal("self_reported"),
+  v.literal("photo"),
+  v.literal("check_in"),
+);
+
 const catalogStatus = v.union(v.literal("active"), v.literal("retired"));
 
 export default defineSchema({
@@ -72,9 +80,62 @@ export default defineSchema({
     bio: v.optional(v.string()),
     searchText: v.optional(v.string()),
     friendCount: v.number(),
+    visitCount: v.optional(v.number()),
+    unlockCount: v.optional(v.number()),
+    countryCount: v.optional(v.number()),
   })
     .index("by_handle", ["handle"])
     .searchIndex("search_searchText", { searchField: "searchText" }),
+
+  visits: defineTable({
+    userId: v.id("users"),
+    destinationId: v.id("destinations"),
+    countryCode: v.string(),
+    year: v.optional(v.number()),
+    month: v.optional(v.number()),
+    source: verification,
+    unlockCount: v.number(),
+  })
+    .index("by_userId_and_destinationId", ["userId", "destinationId"])
+    .index("by_userId_and_countryCode", ["userId", "countryCode"]),
+
+  landmarkUnlocks: defineTable({
+    userId: v.id("users"),
+    landmarkId: v.id("landmarks"),
+    destinationId: v.id("destinations"),
+    verification,
+  })
+    .index("by_userId_and_destinationId", ["userId", "destinationId"])
+    .index("by_userId_and_landmarkId", ["userId", "landmarkId"]),
+
+  saves: defineTable({
+    userId: v.id("users"),
+    destinationId: v.id("destinations"),
+  }).index("by_userId_and_destinationId", ["userId", "destinationId"]),
+
+  rankedLists: defineTable({
+    userId: v.id("users"),
+    list: rankedList,
+    size: v.number(),
+    version: v.number(),
+  }).index("by_userId_and_list", ["userId", "list"]),
+
+  rankings: defineTable({
+    userId: v.id("users"),
+    list: rankedList,
+    itemId: v.union(v.id("destinations"), v.id("landmarks")),
+    rank: v.number(),
+  })
+    .index("by_userId_and_list_and_rank", ["userId", "list", "rank"])
+    .index("by_userId_and_list_and_itemId", ["userId", "list", "itemId"]),
+
+  comparisons: defineTable({
+    userId: v.id("users"),
+    list: rankedList,
+    itemId: v.union(v.id("destinations"), v.id("landmarks")),
+    opponentId: v.union(v.id("destinations"), v.id("landmarks")),
+    outcome: v.union(v.literal("new"), v.literal("existing"), v.literal("tie")),
+  }).index("by_userId_and_list", ["userId", "list"]),
 
   friendRequests: defineTable({
     fromId: v.id("users"),

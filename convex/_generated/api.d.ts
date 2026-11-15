@@ -15,8 +15,13 @@ import type * as friends from "../friends.js";
 import type * as landmarks from "../landmarks.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_lists from "../lib/lists.js";
+import type * as lib_ranking from "../lib/ranking.js";
 import type * as lib_social from "../lib/social.js";
 import type * as lib_text from "../lib/text.js";
+import type * as lib_visits from "../lib/visits.js";
+import type * as places from "../places.js";
+import type * as rankings from "../rankings.js";
 import type * as users from "../users.js";
 
 import type {
@@ -33,8 +38,13 @@ declare const fullApi: ApiFromModules<{
   landmarks: typeof landmarks;
   "lib/auth": typeof lib_auth;
   "lib/errors": typeof lib_errors;
+  "lib/lists": typeof lib_lists;
+  "lib/ranking": typeof lib_ranking;
   "lib/social": typeof lib_social;
   "lib/text": typeof lib_text;
+  "lib/visits": typeof lib_visits;
+  places: typeof places;
+  rankings: typeof rankings;
   users: typeof users;
 }>;
 

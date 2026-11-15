@@ -31,6 +31,10 @@ export const profileValidator = v.object({
   bio: v.union(v.string(), v.null()),
   friendCount: v.number(),
   relationship,
+  stats: v.union(
+    v.object({ cities: v.number(), landmarks: v.number(), countries: v.number() }),
+    v.null(),
+  ),
 });
 
 export const userSummaryValidator = v.object({
@@ -52,11 +56,20 @@ async function toProfile(
   viewerId: Id<"users">,
   user: Doc<"users">,
 ) {
+  const relationship = await getRelationship(ctx, viewerId, user._id);
   return {
     ...toSummary(user),
     bio: user.bio ?? null,
     friendCount: user.friendCount,
-    relationship: await getRelationship(ctx, viewerId, user._id),
+    relationship,
+    stats:
+      relationship === "self" || relationship === "friends"
+        ? {
+            cities: user.visitCount ?? 0,
+            landmarks: user.unlockCount ?? 0,
+            countries: user.countryCount ?? 0,
+          }
+        : null,
   };
 }
 
