@@ -1,8 +1,9 @@
 import { useMutation, useQuery } from 'convex/react';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { AsyncButton, Notice, PlaceArt } from '@/components/live-ui';
+import { AsyncButton, Notice, PhotoCredit, PlaceArt } from '@/components/live-ui';
 import { Button } from '@/components/ui/button';
 import { Glass } from '@/components/ui/glass';
 import { IconButton } from '@/components/ui/icon-button';
@@ -19,7 +20,6 @@ export default function PlaceScreen() {
   const save = useMutation(api.places.save);
   const unsave = useMutation(api.places.unsave);
   const addVisit = useMutation(api.places.addVisit);
-  const unlock = useMutation(api.places.unlockLandmark);
   const lock = useMutation(api.places.lockLandmark);
 
   return (
@@ -31,6 +31,7 @@ export default function PlaceScreen() {
       {!destinationId || catalog === null ? <Notice>Place not found.</Notice> : !detail ? <Notice>Loading place…</Notice> : (
         <>
           <PlaceArt place={detail.destination} height={200} />
+          <PhotoCredit image={detail.destination.image} />
           <Glass style={styles.card}>
             <Text variant="eyebrow" color="muted">{detail.destination.countryName} · {detail.destination.kind}</Text>
             <Text variant="title" accessibilityRole="header">{detail.destination.name}</Text>
@@ -57,23 +58,37 @@ export default function PlaceScreen() {
           <View style={styles.landmarks}>
             <Text variant="title2">Landmarks</Text>
             <Text color="slate">{detail.viewer.visit?.unlockCount ?? 0} collected · {detail.destination.landmarkCount} in the catalog</Text>
-            <Text variant="caption" color="muted">Mark places you’ve visited by hand. These visits and landmark unlocks are self-reported, not location-verified.</Text>
+            <Text variant="caption" color="muted">Mark places you’ve visited by hand. Landmarks are self-reported unless you attach a photo taken there.</Text>
             {!detail.viewer.visit && <Notice>Add this place to your visits to unlock its landmarks.</Notice>}
-            {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks in this catalog yet.</Notice> : landmarks.map(({ landmark, unlocked, friendsUnlocked }) => (
-              <Glass key={landmark._id} style={styles.card}>
-                <Text variant="cardTitle">{landmark.name}</Text>
-                <Text variant="caption" color="muted">{landmark.category}</Text>
-                <Text color="slate">{unlocked ? 'Collected' : 'Not collected'}</Text>
-                {friendsUnlocked > 0 && <Text variant="caption" color="muted">{friendsUnlocked} friends collected this</Text>}
-                {detail.viewer.visit && (
-                  <AsyncButton
-                    label={unlocked ? 'Mark as not visited' : 'I visited this landmark'}
-                    variant="secondary"
-                    onPress={() => unlocked ? lock({ landmarkId: landmark._id }) : unlock({ landmarkId: landmark._id })}
-                  />
-                )}
-              </Glass>
-            ))}
+            {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks in this catalog yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, friendsUnlocked, photoCount, coverUrl }) => {
+              const openVisit = () => router.push({ pathname: '/landmark-visit/[id]', params: { id: landmark._id } });
+              return (
+                <Glass key={landmark._id} style={styles.card}>
+                  <View style={styles.landmarkRow}>
+                    {coverUrl && (
+                      <Image source={{ uri: coverUrl }} style={styles.cover} contentFit="cover" recyclingKey={landmark._id} accessibilityLabel={`Your photo of ${landmark.name}`} />
+                    )}
+                    <View style={styles.landmarkCopy}>
+                      <Text variant="cardTitle">{landmark.name}</Text>
+                      <Text variant="caption" color="muted">{landmark.category}</Text>
+                      <Text color="slate">
+                        {unlocked ? (verification === 'photo' ? 'Collected · photo-verified' : 'Collected') : 'Not collected'}
+                        {photoCount > 0 ? ` · ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  {friendsUnlocked > 0 && <Text variant="caption" color="muted">{friendsUnlocked} friends collected this</Text>}
+                  {detail.viewer.visit && (unlocked ? (
+                    <>
+                      <Button label="Edit visit" variant="secondary" onPress={openVisit} />
+                      <AsyncButton label="Mark as not visited" variant="link" onPress={() => lock({ landmarkId: landmark._id })} />
+                    </>
+                  ) : (
+                    <Button label="I visited this landmark" variant="secondary" onPress={openVisit} />
+                  ))}
+                </Glass>
+              );
+            })}
           </View>
         </>
       )}
@@ -85,4 +100,7 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   card: { padding: 20, gap: 12 },
   landmarks: { gap: 12 },
+  landmarkRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },
+  landmarkCopy: { flex: 1, gap: 4 },
+  cover: { width: 64, height: 64, borderRadius: 14 },
 });

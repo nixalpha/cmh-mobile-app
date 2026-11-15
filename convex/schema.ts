@@ -17,6 +17,15 @@ export const verification = v.union(
   v.literal("check_in"),
 );
 
+export const destinationImage = v.object({
+  url: v.string(),
+  width: v.number(),
+  height: v.number(),
+  credit: v.string(),
+  license: v.string(),
+  sourceUrl: v.string(),
+});
+
 const itemId = v.union(v.id("destinations"), v.id("landmarks"));
 
 const activityBase = {
@@ -45,6 +54,7 @@ export default defineSchema({
     popularity: v.number(),
     tier: v.number(),
     landmarkCount: v.number(),
+    image: v.optional(destinationImage),
     status: catalogStatus,
     importedAt: v.number(),
   })
@@ -114,9 +124,26 @@ export default defineSchema({
     landmarkId: v.id("landmarks"),
     destinationId: v.id("destinations"),
     verification,
+    visitedOn: v.optional(v.string()),
+    note: v.optional(v.string()),
+    companionIds: v.optional(v.array(v.id("users"))),
   })
     .index("by_userId_and_destinationId", ["userId", "destinationId"])
     .index("by_userId_and_landmarkId", ["userId", "landmarkId"]),
+
+  landmarkPhotos: defineTable({
+    userId: v.id("users"),
+    unlockId: v.id("landmarkUnlocks"),
+    landmarkId: v.id("landmarks"),
+    destinationId: v.id("destinations"),
+    storageId: v.id("_storage"),
+    width: v.number(),
+    height: v.number(),
+    takenAt: v.optional(v.number()),
+    order: v.number(),
+  })
+    .index("by_unlockId_and_order", ["unlockId", "order"])
+    .index("by_storageId", ["storageId"]),
 
   saves: defineTable({
     userId: v.id("users"),
@@ -203,8 +230,10 @@ export default defineSchema({
       v.literal("friend_accepted"),
       v.literal("like"),
       v.literal("comment"),
+      v.literal("tagged"),
     ),
     activityId: v.optional(v.id("activities")),
+    landmarkId: v.optional(v.id("landmarks")),
     read: v.boolean(),
   })
     .index("by_userId", ["userId"])

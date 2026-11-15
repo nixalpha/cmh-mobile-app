@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-nat
 
 import { Glass } from '@/components/ui/glass';
 import { Icon, type IconName } from '@/components/ui/icon';
+import { IndicatorItem, IndicatorPill, useSlidingIndicator } from '@/components/ui/sliding-indicator';
 import { Text } from '@/components/ui/text';
 import { colors } from '@/constants/theme';
 
@@ -22,35 +23,46 @@ export function SegmentedControl<T extends string>({
   layout = 'fill',
   style,
 }: SegmentedControlProps<T>) {
+  const indicator = useSlidingIndicator(segments.findIndex((segment) => segment.value === value));
+
+  const content = (segment: Segment<T>, tint: string) => (
+    <>
+      {segment.icon && (
+        <Icon
+          name={segment.icon}
+          size={layout === 'icons' ? 18 : 14}
+          strokeWidth={layout === 'icons' ? 2 : 2.2}
+          color={tint}
+        />
+      )}
+      {layout !== 'icons' && (
+        <Text variant="label" style={[{ color: tint }, layout === 'compact' && styles.compactLabel]}>
+          {segment.label}
+        </Text>
+      )}
+    </>
+  );
+
   return (
     <Glass radius={layout === 'fill' ? 24 : layout === 'icons' ? 25 : 22} style={[styles.track, layout !== 'fill' && styles.tight, style]}>
-      {segments.map((segment) => {
-        const selected = segment.value === value;
-        const tint = selected ? colors.white : colors.slate;
-        return (
-          <Pressable
-            key={segment.value}
-            onPress={() => onChange(segment.value)}
-            accessibilityRole="tab"
-            accessibilityLabel={segment.label}
-            accessibilityState={{ selected }}
-            style={[styles.segment, styles[layout], selected && styles.selected]}>
-            {segment.icon && (
-              <Icon
-                name={segment.icon}
-                size={layout === 'icons' ? 18 : 14}
-                strokeWidth={layout === 'icons' ? 2 : 2.2}
-                color={tint}
-              />
-            )}
-            {layout !== 'icons' && (
-              <Text variant="label" style={[{ color: tint }, layout === 'compact' && styles.compactLabel]}>
-                {segment.label}
-              </Text>
-            )}
-          </Pressable>
-        );
-      })}
+      <IndicatorPill indicator={indicator} style={[styles.pill, { borderRadius: styles[layout].borderRadius }]} />
+      {segments.map((segment, index) => (
+        <Pressable
+          key={segment.value}
+          onPress={() => onChange(segment.value)}
+          onLayout={indicator.onItemLayout(index)}
+          accessibilityRole="tab"
+          accessibilityLabel={segment.label}
+          accessibilityState={{ selected: segment.value === value }}
+          style={[styles.segment, styles[layout]]}>
+          <IndicatorItem
+            indicator={indicator}
+            index={index}
+            inactive={content(segment, colors.slate)}
+            active={content(segment, colors.white)}
+          />
+        </Pressable>
+      ))}
     </Glass>
   );
 }
@@ -62,6 +74,6 @@ const styles = StyleSheet.create({
   fill: { flex: 1, height: 40, borderRadius: 20 },
   compact: { height: 36, paddingHorizontal: 14, borderRadius: 18 },
   icons: { width: 42, height: 42, borderRadius: 21 },
-  selected: { backgroundColor: colors.ink },
+  pill: { backgroundColor: colors.ink },
   compactLabel: { fontSize: 13, lineHeight: 18 },
 });

@@ -1,13 +1,11 @@
 import { ConvexError } from 'convex/values';
+import { Image } from 'expo-image';
+import { openURL } from 'expo-linking';
 import { useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import type { ArtName } from '@/art';
-import { Art } from '@/components/ui/art';
 import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
 
 export function errorMessage(error: unknown) {
   if (error instanceof ConvexError && typeof error.data === 'object' && error.data !== null && 'message' in error.data) {
@@ -44,22 +42,43 @@ export function AsyncButton({ label, onPress, variant = 'primary', disabled = fa
   );
 }
 
-const artwork: Record<string, ArtName> = {
-  'Paris|FR': 'tileParis', 'Tokyo|JP': 'tileTokyo', 'Rome|IT': 'tileRome', 'New York City|US': 'tileNewYork',
-  'Reykjavík|IS': 'tileReykjavik', 'Lisbon|PT': 'tileLisbon', 'Kyoto|JP': 'kyotoCard',
-  'Porto|PT': 'porto', 'Cappadocia|TR': 'cappadocia', 'Hallstatt|AT': 'hallstatt',
-};
+export type PlaceImage = { url: string; credit: string; license: string; sourceUrl: string };
 
-export function PlaceArt({ place, height = 140 }: { place?: { name: string; countryCode: string }; height?: number }) {
-  const name = place ? artwork[`${place.name}|${place.countryCode}`] : undefined;
+export function PlaceArt({ place, height = 140 }: { place?: { _id: string; image: PlaceImage | null }; height?: number }) {
   return (
     <View style={[styles.art, { height }]} accessible={false}>
-      {name ? <Art name={name} /> : <Icon name="compass" size={48} color={colors.slate} />}
+      {place?.image && (
+        <Image
+          source={{ uri: place.image.url }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={200}
+          recyclingKey={place._id}
+          cachePolicy="disk"
+        />
+      )}
     </View>
+  );
+}
+
+export function PhotoCredit({ image }: { image: PlaceImage | null }) {
+  if (!image) return null;
+  return (
+    <Text
+      variant="caption"
+      color="muted"
+      numberOfLines={1}
+      accessibilityRole="link"
+      accessibilityHint="Opens the photo on Wikimedia Commons"
+      onPress={() => openURL(image.sourceUrl)}
+      style={styles.credit}>
+      Photo: {image.credit}{image.license ? ` · ${image.license}` : ''}
+    </Text>
   );
 }
 
 const styles = StyleSheet.create({
   action: { gap: 6 },
-  art: { borderRadius: 22, overflow: 'hidden', backgroundColor: '#DCE6EB', alignItems: 'center', justifyContent: 'center' },
+  art: { borderRadius: 22, overflow: 'hidden', backgroundColor: '#DCE6EB' },
+  credit: { marginTop: -4, paddingHorizontal: 4 },
 });

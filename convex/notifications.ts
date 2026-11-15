@@ -2,6 +2,7 @@ import { paginationOptsValidator, paginationResultValidator } from "convex/serve
 import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
+import { landmarkValidator, toLandmark } from "./destinations";
 import { requireUser } from "./lib/auth";
 import { toSummary, userSummaryValidator } from "./users";
 
@@ -18,9 +19,11 @@ export const list = query({
         v.literal("friend_accepted"),
         v.literal("like"),
         v.literal("comment"),
+        v.literal("tagged"),
       ),
       actor: userSummaryValidator,
       activityId: v.union(v.id("activities"), v.null()),
+      landmark: v.union(landmarkValidator, v.null()),
       read: v.boolean(),
     }),
   ),
@@ -35,12 +38,14 @@ export const list = query({
     for (const row of result.page) {
       const actor = await ctx.db.get("users", row.actorId);
       if (actor === null) continue;
+      const landmark = row.landmarkId ? await ctx.db.get("landmarks", row.landmarkId) : null;
       page.push({
         _id: row._id,
         _creationTime: row._creationTime,
         type: row.type,
         actor: toSummary(actor),
         activityId: row.activityId ?? null,
+        landmark: landmark ? toLandmark(landmark) : null,
         read: row.read,
       });
     }

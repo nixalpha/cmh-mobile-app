@@ -6,6 +6,7 @@ const icons = {
   arrowLeft: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   bookmark: '<path d="M6 4h12v17l-6-4-6 4z"/>',
   check: '<path d="M5 12l5 5 9-10"/>',
   chevronDown: '<path d="M6 9l6 6 6-6"/>',
@@ -20,6 +21,7 @@ const icons = {
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   map: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
   minus: '<path d="M5 12h14"/>',
+  note: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   pause:
     '<rect x="6" y="5" width="4" height="14" rx="1" fill="COLOR" stroke="none"/><rect x="14" y="5" width="4" height="14" rx="1" fill="COLOR" stroke="none"/>',
   photo: '<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',
@@ -30,6 +32,8 @@ const icons = {
   share: '<path d="M12 3v13M7 8l5-5 5 5M5 14v6h14v-6"/>',
   sliders:
     '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+  users:
+    '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.4.3 4.2 2.1 5 5"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
 } as const;
 

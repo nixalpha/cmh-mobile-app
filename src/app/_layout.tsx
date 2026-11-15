@@ -60,6 +60,7 @@ function SessionRoutes() {
         <Stack.Screen name="place/[id]" />
         <Stack.Screen name="city/[id]" />
         <Stack.Screen name="rank/[id]" options={{ presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="landmark-visit/[id]" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
   );
