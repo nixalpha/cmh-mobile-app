@@ -9,10 +9,14 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as catalog from "../catalog.js";
+import type * as destinations from "../destinations.js";
 import type * as friends from "../friends.js";
+import type * as landmarks from "../landmarks.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_social from "../lib/social.js";
+import type * as lib_text from "../lib/text.js";
 import type * as users from "../users.js";
 
 import type {
@@ -23,10 +27,14 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  catalog: typeof catalog;
+  destinations: typeof destinations;
   friends: typeof friends;
+  landmarks: typeof landmarks;
   "lib/auth": typeof lib_auth;
   "lib/errors": typeof lib_errors;
   "lib/social": typeof lib_social;
+  "lib/text": typeof lib_text;
   users: typeof users;
 }>;
 
