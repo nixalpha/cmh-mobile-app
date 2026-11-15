@@ -9,6 +9,7 @@ import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { getHeader, getRanking } from "./lib/lists";
 import { MIN_LIST_FOR_AVERAGES, scoreForRank } from "./lib/ranking";
+import { scheduleRecompute } from "./lib/recommendations";
 import { areFriends, MAX_FRIENDS } from "./lib/social";
 import { bumpUser, deleteUnlock, deleteVisit, ensureVisit, getVisit } from "./lib/visits";
 import { verification } from "./schema";
@@ -39,6 +40,7 @@ export const addVisit = mutation({
     const user = await requireUser(ctx);
     const destination = await requireDestination(ctx, args.destinationId);
     await ensureVisit(ctx, user._id, destination, { year: args.year, month: args.month });
+    await scheduleRecompute(ctx, user._id);
     return null;
   },
 });
@@ -51,6 +53,7 @@ export const removeVisit = mutation({
     const visit = await getVisit(ctx, user._id, args.destinationId);
     if (visit === null) fail("NOT_FOUND", "You haven't added that place.");
     await deleteVisit(ctx, visit);
+    await scheduleRecompute(ctx, user._id);
     return null;
   },
 });
@@ -113,6 +116,7 @@ export const save = mutation({
       .unique();
     if (existing !== null) return null;
     await ctx.db.insert("saves", { userId: user._id, destinationId: args.destinationId });
+    await scheduleRecompute(ctx, user._id);
     if (args.post ?? true) {
       await postActivity(ctx, {
         type: "saved",
@@ -141,6 +145,7 @@ export const unsave = mutation({
     if (existing === null) return null;
     await ctx.db.delete("saves", existing._id);
     await removeActivities(ctx, user._id, args.destinationId, (a) => a.type === "saved");
+    await scheduleRecompute(ctx, user._id);
     return null;
   },
 });

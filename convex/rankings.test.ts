@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -8,6 +8,13 @@ import { befriend, setup, signUp, type Test } from "./test.setup";
 type Actor = Awaited<ReturnType<typeof signUp>>["as"];
 type ItemId = Id<"destinations"> | Id<"landmarks">;
 const firstPage = { numItems: 50, cursor: null };
+
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 async function seedCatalog(t: Test, count = 8) {
   await t.mutation(internal.catalog.upsertDestinations, {

@@ -17,6 +17,7 @@ import {
   type List,
 } from "./lib/lists";
 import { scoreForRank } from "./lib/ranking";
+import { scheduleRecompute } from "./lib/recommendations";
 import { areFriends } from "./lib/social";
 import { ensureVisit, getVisit } from "./lib/visits";
 import { rankedList } from "./schema";
@@ -106,6 +107,7 @@ export const place = mutation({
       const destinationId = destination?._id ?? landmark!.destinationId;
       await postRanking(ctx, user._id, args.list, args.itemId, destinationId, placed, args.post);
     }
+    await scheduleRecompute(ctx, user._id);
     return { rank: placed.rank, size: placed.size, score: scoreForRank(placed.rank, placed.size) };
   },
 });
@@ -128,6 +130,7 @@ export const rerank = mutation({
       const destinationId = destination?._id ?? landmark!.destinationId;
       await postRanking(ctx, user._id, args.list, args.itemId, destinationId, placed, args.post);
     }
+    await scheduleRecompute(ctx, user._id);
     return { rank: placed.rank, size: placed.size, score: scoreForRank(placed.rank, placed.size) };
   },
 });
@@ -140,6 +143,7 @@ export const remove = mutation({
     if (!(await removeRanking(ctx, user._id, args.list, args.itemId))) {
       fail("NOT_FOUND", "That isn't in your list.");
     }
+    await scheduleRecompute(ctx, user._id);
     return null;
   },
 });

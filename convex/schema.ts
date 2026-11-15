@@ -211,6 +211,33 @@ export default defineSchema({
     .index("by_userId_and_read", ["userId", "read"])
     .index("by_activityId_and_actorId", ["activityId", "actorId"]),
 
+  recommendations: defineTable({
+    userId: v.id("users"),
+    destinationId: v.id("destinations"),
+    score: v.number(),
+    reason: v.union(
+      v.object({
+        kind: v.literal("friends_top"),
+        count: v.number(),
+        friendIds: v.array(v.id("users")),
+      }),
+      v.object({ kind: v.literal("friends_want"), count: v.number() }),
+      v.object({
+        kind: v.literal("similar_to"),
+        sourceId: v.id("destinations"),
+        sourceRank: v.number(),
+        basis: v.union(v.literal("nearby"), v.literal("similar")),
+      }),
+      v.object({ kind: v.literal("popular") }),
+    ),
+  }).index("by_userId_and_score", ["userId", "score"]),
+
+  recommendationState: defineTable({
+    userId: v.id("users"),
+    computedAt: v.optional(v.number()),
+    pending: v.boolean(),
+  }).index("by_userId", ["userId"]),
+
   friendRequests: defineTable({
     fromId: v.id("users"),
     toId: v.id("users"),
