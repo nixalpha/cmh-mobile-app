@@ -18,6 +18,7 @@ bun run catalog:load -- --max-tier=2
 | GeoNames `cities15000` | Cities over 15,000 people: coordinates, population, alternate names | CC BY 4.0, credit GeoNames in the app |
 | Wikidata, through the QLever SPARQL endpoint | Canonical IDs, landmark candidates and their classes, sitelink counts, UNESCO status | CC0 |
 | English Wikivoyage dump | Which places are travel destinations, their type, which city a district belongs to, and the Wikidata IDs of "See" listings. No article text is copied | CC BY-SA |
+| Wikimedia Commons API | One landscape photo per destination: a 1280px thumbnail URL, its size, author, and licence. The app hotlinks the thumbnail and shows the credit on the place screen | Per file, mostly CC BY, CC BY-SA, or public domain |
 | Wikimedia monthly pageview dump | Last month's English Wikivoyage and English Wikipedia views per destination. The dump is several GB and is streamed, not stored. `PAGEVIEWS_MONTH=2026-10` picks another month | CC0 |
 
 ## How places are chosen
@@ -31,6 +32,13 @@ bun run catalog:load -- --max-tier=2
 - Each tier 1 and tier 2 destination gets 8 nearby neighbours, weighted towards popular places, and 4 far-away tier 1 places with a similar mix of landmarks.
 
 `out/report.md` lists the top destinations, the tier 1 places with few landmarks, and the landmark lists of about 35 well-known places. Read it after every build.
+
+## How photos are chosen
+
+- Candidates, in order: the destination's Wikidata image (P18), its night view (P3451), the image of its top landmark, then its Wikivoyage banner (P948).
+- A photo must be a JPEG, PNG, or WebP at least 960 px wide with an aspect ratio between 1.2 and 3. Files named like maps, flags, coats of arms, montages, or satellite images, and images credited to satellite programmes, are skipped.
+- Banners skip the shape check because they are about 7:1; they are a last resort since they look soft at card height. `out/report.md` counts photos, banners, and misses, and lists tier 1 places without a photo.
+- Commons lookups are cached per file in `.cache/commons-imageinfo-1280.json`.
 
 ## Overrides
 

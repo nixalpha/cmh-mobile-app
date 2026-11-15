@@ -7,15 +7,19 @@ import {
   assignTiers,
   computeNeighbors,
   haversineKm,
+  pickImage,
   searchText,
   type Candidate,
   type Destination,
+  type DestinationImage,
   type Kind,
 } from "./lib";
 import {
   admin1Names,
+  commonsImageInfo,
   countryNames,
   geonamesCities,
+  imageCandidates,
   OUT_DIR,
   pageviews,
   parsePoint,
@@ -370,6 +374,28 @@ for (const { row, category } of await listedItems([...listed].filter((id) => !ca
 const landmarks = assignLandmarks(destinations, [...candidates.values()], seeByDestination, pins);
 const neighbors = computeNeighbors(destinations, landmarks);
 
+// Photos: the destination's own image or night view, then its top landmark's image, then its Wikivoyage banner.
+const ownImages = await imageCandidates(destinations.map((d) => d.wikidataId));
+const imageInfo = await commonsImageInfo([...ownImages.values()].flatMap((c) => [...c.image, ...c.night, ...c.banner]));
+const ownPhotos = (id: string) => [...(ownImages.get(id)?.image ?? []), ...(ownImages.get(id)?.night ?? [])];
+const topLandmark = new Map<string, string>();
+for (const d of destinations) {
+  const top = landmarks.get(d.wikidataId)?.[0]?.wikidataId;
+  if (top && pickImage(ownPhotos(d.wikidataId), [], imageInfo)?.source !== "photo") topLandmark.set(d.wikidataId, top);
+}
+const landmarkImages = await imageCandidates([...topLandmark.values()]);
+for (const [file, info] of await commonsImageInfo([...landmarkImages.values()].flatMap((c) => c.image))) {
+  imageInfo.set(file, info);
+}
+const images = new Map<string, { image: DestinationImage; source: "photo" | "banner" } | null>();
+for (const d of destinations) {
+  const landmarkPhotos = landmarkImages.get(topLandmark.get(d.wikidataId) ?? "")?.image ?? [];
+  images.set(
+    d.wikidataId,
+    pickImage([...ownPhotos(d.wikidataId), ...landmarkPhotos], ownImages.get(d.wikidataId)?.banner ?? [], imageInfo),
+  );
+}
+
 const round = (value: number) => Math.round(value * 10000) / 10000;
 const jsonl = (rows: object[]) => rows.map((row) => JSON.stringify(row)).join("\n") + "\n";
 writeFileSync(
@@ -390,6 +416,7 @@ writeFileSync(
       popularity: round(d.popularity),
       tier: d.tier,
       landmarkCount: landmarks.get(d.wikidataId)?.length ?? 0,
+      image: images.get(d.wikidataId)?.image,
     })),
   ),
 );
@@ -428,6 +455,7 @@ const count = <T,>(items: T[], key: (item: T) => string | number) => {
 };
 const tierOne = destinations.filter((d) => d.tier === 1);
 const thin = tierOne.filter((d) => (landmarks.get(d.wikidataId)?.length ?? 0) < 5);
+const imageSource = (d: Destination) => images.get(d.wikidataId)?.source ?? "none";
 const named = (list: Destination[]) => list.map((d) => (d.kind === "city" ? d.name : `${d.name} [${d.kind}]`)).join(", ");
 const report = [
   "# Catalog build report",
@@ -438,6 +466,9 @@ const report = [
   `- Landmarks: ${landmarkRows.length} across ${landmarks.size} destinations`,
   `- Landmark categories: ${count(landmarkRows, (l) => l.category)}`,
   `- Tier 1 destinations with fewer than 5 landmarks: ${thin.length} (${count(thin, (d) => d.kind)})`,
+  `- Images, all tiers: ${count(destinations, imageSource)}`,
+  `- Images, tier 1: ${count(tierOne, imageSource)}`,
+  `- Tier 1 destinations without a photo: ${tierOne.filter((d) => imageSource(d) !== "photo").map((d) => d.name).join(", ") || "none"}`,
   "",
   "## Top 150 destinations",
   "",
@@ -467,6 +498,8 @@ for (const [name, countryCode] of SPOT_CHECK) {
     "",
     `${destination.wikidataId} · ${destination.kind} · tier ${destination.tier} · rank ${destinations.indexOf(destination) + 1} · neighbors: ${(neighbors.get(destination.wikidataId) ?? []).map((n) => `${byId.get(n.wikidataId)!.name} (${n.basis})`).join(", ")}`,
     "",
+    `Image (${imageSource(destination)}): ${images.get(destination.wikidataId)?.image.url ?? "none"}`,
+    "",
   );
   for (const l of landmarks.get(destination.wikidataId) ?? []) {
     report.push(`${l.order}. ${l.name} (${l.category}, ${l.sitelinks} links${l.seeListed ? ", S" : ""}${l.unesco ? ", U" : ""})`);
@@ -474,4 +507,4 @@ for (const [name, countryCode] of SPOT_CHECK) {
   report.push("");
 }
 writeFileSync(join(OUT_DIR, "report.md"), report.join("\n"));
-console.log(report.slice(0, 9).join("\n"));
+console.log(report.slice(0, 12).join("\n"));

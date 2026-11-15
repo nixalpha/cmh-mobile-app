@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 
-import { seeListings } from "./lib";
+import { commonsFileName, plainCredit, seeListings, type ImageInfo, type ImageKind } from "./lib";
 
 export const CACHE_DIR = join(import.meta.dirname, ".cache");
 export const OUT_DIR = join(import.meta.dirname, "out");
@@ -258,4 +258,110 @@ export async function pageviews(titles: { wikipedia: string[]; wikivoyage: strin
     `pageviews for ${views.wikipedia.size} of ${titles.wikipedia.length} Wikipedia and ${views.wikivoyage.size} of ${titles.wikivoyage.length} Wikivoyage articles`,
   );
   return views;
+}
+
+const IMAGE_BATCH = 400;
+const COMMONS_API = "https://commons.wikimedia.org/w/api.php";
+const COMMONS_BATCH = 50;
+export const THUMB_WIDTH = 1280;
+
+export type ImageCandidates = Record<ImageKind, string[]>;
+
+/** Commons files Wikidata lists for each item: image (P18), night view (P3451), Wikivoyage banner (P948). */
+export async function imageCandidates(ids: string[]): Promise<Map<string, ImageCandidates>> {
+  const result = new Map<string, ImageCandidates>();
+  const unique = [...new Set(ids)].sort();
+  for (let i = 0; i < unique.length; i += IMAGE_BATCH) {
+    const values = unique.slice(i, i + IMAGE_BATCH).map((id) => `wd:${id}`).join(" ");
+    const rows = await sparql(
+      `images-${i / IMAGE_BATCH}`,
+      `SELECT ?item ?kind ?file WHERE { VALUES ?item { ${values} } { ?item wdt:P18 ?file BIND("image" AS ?kind) } UNION { ?item wdt:P3451 ?file BIND("night" AS ?kind) } UNION { ?item wdt:P948 ?file BIND("banner" AS ?kind) } }`,
+    );
+    for (const [item, kind, value] of rows) {
+      const file = commonsFileName(value);
+      if (!file || (kind !== "image" && kind !== "night" && kind !== "banner")) continue;
+      const entry = result.get(item) ?? { image: [], night: [], banner: [] };
+      if (!entry[kind].includes(file)) entry[kind].push(file);
+      result.set(item, entry);
+    }
+  }
+  return result;
+}
+
+type CommonsPage = {
+  title: string;
+  missing?: boolean;
+  invalid?: boolean;
+  imageinfo?: {
+    width: number;
+    height: number;
+    mime: string;
+    thumburl?: string;
+    thumbwidth?: number;
+    thumbheight?: number;
+    descriptionurl: string;
+    extmetadata?: Record<string, { value: string } | undefined>;
+  }[];
+};
+
+/** Size, licence, credit, and a THUMB_WIDTH thumbnail for Commons files. Cached per file across builds. */
+export async function commonsImageInfo(files: string[]): Promise<Map<string, ImageInfo | null>> {
+  const cachePath = join(CACHE_DIR, `commons-imageinfo-${THUMB_WIDTH}.json`);
+  const cache = new Map<string, ImageInfo | null>(existsSync(cachePath) ? JSON.parse(readFileSync(cachePath, "utf8")) : []);
+  const missing = [...new Set(files)].filter((file) => !cache.has(file)).sort();
+  if (missing.length > 0) console.log(`looking up ${missing.length} Commons files`);
+  for (let i = 0; i < missing.length; i += COMMONS_BATCH) {
+    const batch = missing.slice(i, i + COMMONS_BATCH);
+    const body = new URLSearchParams({
+      action: "query",
+      format: "json",
+      formatversion: "2",
+      prop: "imageinfo",
+      iiprop: "url|size|mime|extmetadata",
+      iiextmetadatafilter: "LicenseShortName|Artist",
+      iiurlwidth: String(THUMB_WIDTH),
+      titles: batch.map((file) => `File:${file}`).join("|"),
+    });
+    const data = await retry(`commons-${i}`, async () => {
+      const response = await fetch(COMMONS_API, {
+        method: "POST",
+        headers: { "User-Agent": USER_AGENT, "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return (await response.json()) as {
+        query?: { normalized?: { from: string; to: string }[]; pages?: CommonsPage[] };
+      };
+    });
+    const requested = new Map(batch.map((file) => [`File:${file}`, file]));
+    for (const { from, to } of data.query?.normalized ?? []) {
+      const file = requested.get(from);
+      if (file) requested.set(to, file);
+    }
+    for (const page of data.query?.pages ?? []) {
+      const file = requested.get(page.title);
+      if (!file) continue;
+      const info = page.imageinfo?.[0];
+      if (page.missing || page.invalid || !info) {
+        cache.set(file, null);
+        continue;
+      }
+      const meta = info.extmetadata ?? {};
+      cache.set(file, {
+        file,
+        mime: info.mime,
+        width: info.width,
+        height: info.height,
+        thumbUrl: (info.thumburl ?? "").split("?")[0],
+        thumbWidth: info.thumbwidth ?? info.width,
+        thumbHeight: info.thumbheight ?? info.height,
+        pageUrl: info.descriptionurl,
+        credit: plainCredit(meta.Artist?.value ?? ""),
+        license: plainCredit(meta.LicenseShortName?.value ?? "", 40),
+      });
+    }
+    if ((i / COMMONS_BATCH) % 20 === 19) writeFileSync(cachePath, JSON.stringify([...cache]));
+  }
+  writeFileSync(cachePath, JSON.stringify([...cache]));
+  return cache;
 }
