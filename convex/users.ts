@@ -88,11 +88,30 @@ export const createUser = internalMutation({
 
 export const me = query({
   args: {},
-  returns: v.union(profileValidator.extend({ hasPhone: v.boolean() }), v.null()),
+  returns: v.union(
+    profileValidator.extend({ hasPhone: v.boolean(), onboarded: v.boolean() }),
+    v.null(),
+  ),
   handler: async (ctx) => {
     const user = await getUser(ctx);
     if (user === null) return null;
-    return { ...(await toProfile(ctx, user._id, user)), hasPhone: user.phoneKey !== undefined };
+    return {
+      ...(await toProfile(ctx, user._id, user)),
+      hasPhone: user.phoneKey !== undefined,
+      onboarded: user.onboardedAt !== undefined,
+    };
+  },
+});
+
+export const completeOnboarding = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    if (user.onboardedAt === undefined) {
+      await ctx.db.patch("users", user._id, { onboardedAt: Date.now() });
+    }
+    return null;
   },
 });
 

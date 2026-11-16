@@ -12,6 +12,16 @@ test("sign-up creates a profile whose handle defaults to the username", async ()
   expect(me).toMatchObject({ handle: "alice", displayName: "alice", friendCount: 0, relationship: "self" });
 });
 
+test("new accounts start onboarding until they complete it", async () => {
+  const t = setup();
+  const alice = await signUp(t, "alice");
+  expect(await alice.as.query(api.users.me, {})).toMatchObject({ onboarded: false });
+  await alice.as.mutation(api.users.completeOnboarding, {});
+  await alice.as.mutation(api.users.completeOnboarding, {});
+  expect(await alice.as.query(api.users.me, {})).toMatchObject({ onboarded: true });
+  await expect(t.mutation(api.users.completeOnboarding, {})).rejects.toThrow(/UNAUTHENTICATED/);
+});
+
 test("signed-out callers are refused everywhere", async () => {
   const t = setup();
   const alice = await signUp(t, "alice");

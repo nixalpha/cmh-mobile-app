@@ -107,6 +107,8 @@ export default defineSchema({
     countryCount: v.optional(v.number()),
     // SHA-256 of the last 10 phone digits, so contacts can find this account.
     phoneKey: v.optional(v.string()),
+    // Set when the user finishes or skips first-run onboarding.
+    onboardedAt: v.optional(v.number()),
   })
     .index("by_handle", ["handle"])
     .index("by_phoneKey", ["phoneKey"])
