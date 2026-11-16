@@ -1,5 +1,5 @@
 import { useConvex, useMutation, useQuery } from 'convex/react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -20,14 +20,17 @@ const BUTTON_HEIGHT = 44;
 type Place = { id: Id<'destinations'>; name: string; countryCode: string; takenAt?: number };
 export default function OnboardingScreen() {
   const client = useConvex();
-  const [scanning, setScanning] = useState(photoScanSupported);
+  // The Places tab opens this screen to add a trip. Only first-run onboarding reads the camera roll.
+  const adding = useLocalSearchParams<{ mode?: string }>().mode === 'add';
+  const scan = photoScanSupported && !adding;
+  const [scanning, setScanning] = useState(scan);
   const [found, setFound] = useState<Place[]>([]);
   const [selected, setSelected] = useState<Place[]>([]);
   const [notice, setNotice] = useState('');
 
   // Reads where the camera roll's photos were taken as soon as onboarding opens.
   useEffect(() => {
-    if (!photoScanSupported) return;
+    if (!scan) return;
     let cancelled = false;
     void findPhotoPlaces(client).then((places) => {
       if (cancelled) return;
@@ -36,7 +39,7 @@ export default function OnboardingScreen() {
     }).catch((cause) => { if (!cancelled) setNotice(errorMessage(cause)); })
       .finally(() => { if (!cancelled) setScanning(false); });
     return () => { cancelled = true; };
-  }, [client]);
+  }, [client, scan]);
 
   if (scanning) {
     return (
@@ -48,7 +51,7 @@ export default function OnboardingScreen() {
       </Screen>
     );
   }
-  return <PickPlaces found={found} selected={selected} setSelected={setSelected} notice={notice} />;
+  return <PickPlaces found={found} selected={selected} setSelected={setSelected} notice={notice} adding={adding} />;
 }
 
 // Looks up each photo spot's city. Places already on the account are left out.
@@ -71,12 +74,14 @@ async function findPhotoPlaces(client: ReturnType<typeof useConvex>): Promise<Pl
   return places;
 }
 
-function PickPlaces({ found, selected, setSelected, notice }: {
+function PickPlaces({ found, selected, setSelected, notice, adding }: {
   found: Place[];
   selected: Place[];
   setSelected: (update: (current: Place[]) => Place[]) => void;
   notice: string;
+  adding: boolean;
 }) {
+  const done = () => (adding ? router.back() : router.replace('/permissions'));
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
@@ -121,7 +126,7 @@ function PickPlaces({ found, selected, setSelected, notice }: {
           ? { destinationId: place.id, year: when.getFullYear(), month: when.getMonth() + 1 }
           : { destinationId: place.id });
       }
-      router.replace('/permissions');
+      done();
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -132,7 +137,7 @@ function PickPlaces({ found, selected, setSelected, notice }: {
   return (
     <Screen backdrop="onboarding" scroll style={styles.fill}>
       <View style={styles.center}>
-        <Text variant="title" style={styles.centerText} accessibilityRole="header">Where have you been?</Text>
+        <Text variant="title" style={styles.centerText} accessibilityRole="header">{adding ? 'Add a place' : 'Where have you been?'}</Text>
         {!!notice && <Text color="muted" style={styles.centerText}>{notice}</Text>}
         {found.length > 0 && (
           <>
@@ -153,11 +158,11 @@ function PickPlaces({ found, selected, setSelected, notice }: {
         {loading && <Notice>Loading…</Notice>}
         {!loading && !!search && results?.length === 0 && <Notice>No matches.</Notice>}
         <AsyncButton
-          label={selected.length > 0 ? `Add ${selected.length} ${selected.length === 1 ? 'place' : 'places'}` : 'Continue'}
+          label={selected.length > 0 ? `Add ${selected.length} ${selected.length === 1 ? 'place' : 'places'}` : adding ? 'Done' : 'Continue'}
           height={BUTTON_HEIGHT}
           onPress={save}
         />
-        {!saving && <Button label="Skip" variant="link" height={BUTTON_HEIGHT} onPress={() => router.replace('/permissions')} />}
+        {!saving && <Button label={adding ? 'Cancel' : 'Skip'} variant="link" height={BUTTON_HEIGHT} onPress={done} />}
       </View>
     </Screen>
   );

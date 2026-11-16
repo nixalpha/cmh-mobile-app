@@ -15,7 +15,7 @@ export default function CitiesScreen() {
   const { results, status, loadMore } = usePaginatedQuery(api.places.visits, {}, { initialNumItems: 20 });
 
   return (
-    <Screen backdrop="cities" headerActions={<IconButton icon="plus" label="Add a past trip" onPress={() => router.push('/onboarding')} />}>
+    <Screen backdrop="cities" headerActions={<IconButton icon="plus" label="Add a past trip" onPress={() => router.push({ pathname: '/onboarding', params: { mode: 'add' } })} />}>
       <FlatList
         data={results}
         keyExtractor={(item) => item.destination._id}
