@@ -71,6 +71,12 @@
         }
       ],
       [
+        "expo-contacts",
+        {
+          "contactsPermission": "Travi checks which of your contacts already use the app so you can add them as friends. Phone numbers are hashed on your device before they are compared."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#909DC3"

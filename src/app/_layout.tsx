@@ -94,6 +94,7 @@ function SessionRoutes() {
         <Stack.Screen name="friends" />
         <Stack.Screen name="friends-settings" />
         <Stack.Screen name="onboarding" />
+        <Stack.Screen name="permissions" />
         <Stack.Screen name="place/[id]" />
         <Stack.Screen name="city/[id]" />
         <Stack.Screen name="rank/[id]" options={{ presentation: 'fullScreenModal' }} />

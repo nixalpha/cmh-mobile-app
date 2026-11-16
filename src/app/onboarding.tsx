@@ -42,7 +42,7 @@ export default function OnboardingScreen() {
     setSaving(true);
     try {
       for (const place of selected) await addVisit({ destinationId: place.id });
-      router.replace('/feed');
+      router.replace('/permissions');
     } finally {
       savingRef.current = false;
       setSaving(false);
@@ -78,7 +78,7 @@ export default function OnboardingScreen() {
           </View>
         )}
         <AsyncButton label="Continue" onPress={continueToApp} />
-        {!saving && <Button label="Skip" variant="link" onPress={() => router.replace('/feed')} />}
+        {!saving && <Button label="Skip" variant="link" onPress={() => router.replace('/permissions')} />}
       </Glass>
     </Screen>
   );
