@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentRef, ReactNode, Ref } from 'react';
 import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,13 +15,14 @@ export type ScreenProps = {
   headerActions?: ReactNode;
   color?: string;
   scroll?: boolean;
+  scrollRef?: Ref<ComponentRef<typeof ScrollView>>;
   background?: ReactNode;
   overlay?: ReactNode;
   style?: StyleProp<ViewStyle>;
   children?: ReactNode;
 };
 
-export function Screen({ backdrop, headerActions, color, scroll, background, overlay, style, children }: ScreenProps) {
+export function Screen({ backdrop, headerActions, color, scroll, scrollRef, background, overlay, style, children }: ScreenProps) {
   const top = useScreenTop();
   const insets = useSafeAreaInsets();
   return (
@@ -30,6 +31,7 @@ export function Screen({ backdrop, headerActions, color, scroll, background, ove
       {background}
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           style={styles.root}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, styles.scroll, { paddingTop: top }, style]}>

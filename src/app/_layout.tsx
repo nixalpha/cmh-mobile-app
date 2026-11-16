@@ -10,6 +10,7 @@ import type { Metadata } from 'expo-router/server';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { useConvexAuth, useQuery } from 'convex/react';
 
 import { FriendLocationProvider } from '@/components/friend-location-provider';
@@ -56,16 +57,18 @@ export default function RootLayout() {
 
   return (
     <>
-      <Head>
-        <title>travi</title>
-        <meta name="application-name" content="travi" />
-        <meta name="description" content="Collect the places you love. Find your next favorite with travi." />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/press-kit/icons/apple-touch-icon.png" />
-        <meta property="og:image" content="/press-kit/social/travi-social-card-1200x630.png" />
-        <meta property="og:title" content="travi" />
-        <meta name="theme-color" content="#909DC3" />
-      </Head>
+      {Platform.OS === 'web' && (
+        <Head>
+          <title>travi</title>
+          <meta name="application-name" content="travi" />
+          <meta name="description" content="Collect the places you love. Find your next favorite with travi." />
+          <link rel="icon" href="/favicon.ico" />
+          <link rel="apple-touch-icon" href="/press-kit/icons/apple-touch-icon.png" />
+          <meta property="og:image" content="/press-kit/social/travi-social-card-1200x630.png" />
+          <meta property="og:title" content="travi" />
+          <meta name="theme-color" content="#909DC3" />
+        </Head>
+      )}
       {(loaded || error) && (
         <BackendProvider>
           <StatusBar style="dark" />

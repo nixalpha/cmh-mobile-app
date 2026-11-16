@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from 'convex/react';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useRef, useState, type ComponentRef } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AsyncButton, AsyncIconButton, Notice, PhotoCredit, PlaceArt } from '@/components/live-ui';
 import { Button } from '@/components/ui/button';
@@ -11,10 +11,10 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { api, type Id } from '@/lib/backend';
-import { radius, space } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export default function PlaceScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, landmark: focusedLandmark } = useLocalSearchParams<{ id: string; landmark?: string }>();
   const destinationId = typeof id === 'string' && /^[a-z0-9]{32}$/i.test(id) ? id as Id<'destinations'> : null;
   const catalog = useQuery(api.destinations.get, destinationId ? { destinationId } : 'skip');
   const detail = useQuery(api.places.destination, destinationId && catalog ? { destinationId } : 'skip');
@@ -24,9 +24,18 @@ export default function PlaceScreen() {
   const addVisit = useMutation(api.places.addVisit);
   const lock = useMutation(api.places.lockLandmark);
   const [saveError, setSaveError] = useState('');
+  // Arriving from a landmark pin on the map: bring that landmark's card into view once it is laid out.
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const offsets = useRef<{ list?: number; card?: number; done?: boolean }>({});
+  const revealLandmark = (offset: { list?: number; card?: number }) => {
+    const next = Object.assign(offsets.current, offset);
+    if (next.done || next.list === undefined || next.card === undefined) return;
+    next.done = true;
+    scroll.current?.scrollTo({ y: Math.max(0, next.list + next.card - space.stack), animated: true });
+  };
 
   return (
-    <Screen backdrop="place" scroll headerActions={<>
+    <Screen backdrop="place" scroll scrollRef={scroll} headerActions={<>
         <IconButton icon="arrowLeft" label="Back" onPress={() => router.back()} />
         {destinationId && detail && (
           <AsyncIconButton
@@ -60,14 +69,20 @@ export default function PlaceScreen() {
               <Button label="Rank this place" icon="rank" onPress={() => router.push({ pathname: '/rank/[id]', params: { id: destinationId } })} />
             )}
           </Glass>
-          <View style={styles.landmarks}>
+          <View style={styles.landmarks} onLayout={(event) => revealLandmark({ list: event.nativeEvent.layout.y })}>
             <Text variant="title2">Landmarks</Text>
             <Text color="slate">{detail.viewer.visit?.unlockCount ?? 0}/{detail.destination.landmarkCount} collected</Text>
             {!detail.viewer.visit && <Notice>Mark this place as visited to add landmarks.</Notice>}
             {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, photoCount, coverUrl }) => {
               const openVisit = () => router.push({ pathname: '/landmark-visit/[id]', params: { id: landmark._id } });
               return (
-                <Glass key={landmark._id} style={styles.card}>
+                <Glass
+                  key={landmark._id}
+                  style={styles.card}
+                  {...(landmark._id === focusedLandmark && {
+                    borderColor: colors.accentText,
+                    onLayout: (event) => revealLandmark({ card: event.nativeEvent.layout.y }),
+                  })}>
                   <View style={styles.landmarkRow}>
                     {coverUrl && (
                       <Image source={{ uri: coverUrl }} style={styles.cover} contentFit="cover" recyclingKey={landmark._id} accessibilityLabel={`Your photo of ${landmark.name}`} />

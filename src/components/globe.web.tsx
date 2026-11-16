@@ -10,13 +10,13 @@ import { space } from '@/constants/theme';
 
 export type { GlobeProps } from '@/components/globe-types';
 
-export function Globe({ active, places, selectedId, focusRevision = 0, zoomOutRevision = 0, onSelectPlace }: GlobeProps) {
+export function Globe({ active, places, selectedId, landmarks, selectedLandmarkId, focusRevision = 0, zoomOutRevision = 0, onSelectPlace, onSelectLandmark }: GlobeProps) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
-  const sync = useMemo<GlobeSync>(() => ({ type: 'sync', places, selectedId, focusRevision, zoomOutRevision, active }),
-    [places, selectedId, focusRevision, zoomOutRevision, active]);
+  const sync = useMemo<GlobeSync>(() => ({ type: 'sync', places, selectedId, landmarks, landmarkId: selectedLandmarkId, focusRevision, zoomOutRevision, active }),
+    [places, selectedId, landmarks, selectedLandmarkId, focusRevision, zoomOutRevision, active]);
 
   useEffect(() => {
     function receive(message: MessageEvent) {
@@ -25,10 +25,11 @@ export function Globe({ active, places, selectedId, focusRevision = 0, zoomOutRe
       if (event?.type === 'ready') setReady(true);
       if (event?.type === 'error') setError(event.message);
       if (event?.type === 'select' && places.some((place) => place._id === event.id)) onSelectPlace?.(event.id);
+      if (event?.type === 'landmark' && landmarks?.some((landmark) => landmark._id === event.id)) onSelectLandmark?.(event.id);
     }
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [places, onSelectPlace]);
+  }, [places, landmarks, onSelectPlace, onSelectLandmark]);
   useEffect(() => {
     if (ready) frame.current?.contentWindow?.postMessage(sync, window.location.origin);
   }, [ready, sync]);

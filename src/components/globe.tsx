@@ -12,14 +12,14 @@ import { space } from '@/constants/theme';
 export type { GlobeProps } from '@/components/globe-types';
 const SOURCE = { html: CARTOON_GLOBE_HTML };
 
-export function Globe({ active, places, selectedId, focusRevision = 0, zoomOutRevision = 0, onSelectPlace }: GlobeProps) {
+export function Globe({ active, places, selectedId, landmarks, selectedLandmarkId, focusRevision = 0, zoomOutRevision = 0, onSelectPlace, onSelectLandmark }: GlobeProps) {
   const webview = useRef<WebView<Record<never, never>>>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
-  const sync = useMemo<GlobeSync>(() => ({ type: 'sync', places, selectedId, focusRevision, zoomOutRevision, active: active && foreground }),
-    [places, selectedId, focusRevision, zoomOutRevision, active, foreground]);
+  const sync = useMemo<GlobeSync>(() => ({ type: 'sync', places, selectedId, landmarks, landmarkId: selectedLandmarkId, focusRevision, zoomOutRevision, active: active && foreground }),
+    [places, selectedId, landmarks, selectedLandmarkId, focusRevision, zoomOutRevision, active, foreground]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => setForeground(state === 'active'));
@@ -47,6 +47,7 @@ export function Globe({ active, places, selectedId, focusRevision = 0, zoomOutRe
           if (event?.type === 'ready') setReady(true);
           if (event?.type === 'error') setError(event.message);
           if (event?.type === 'select' && places.some((place) => place._id === event.id)) onSelectPlace?.(event.id);
+          if (event?.type === 'landmark' && landmarks?.some((landmark) => landmark._id === event.id)) onSelectLandmark?.(event.id);
         }}
         onError={() => setError('Could not open the 3D map. Try reloading.')}
         onContentProcessDidTerminate={() => { setReady(false); setRevision((value) => value + 1); }}
