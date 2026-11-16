@@ -37,7 +37,7 @@ export function FriendManager() {
         returnKeyType="search"
         style={styles.input}
       />
-      <IconButton icon="search" label="Search people" onPress={() => setSearch(text.trim())} />
+      <IconButton icon="search" label="Search people" size={SEARCH_HEIGHT} onPress={() => setSearch(text.trim())} />
       </View>
       {!!error && <Notice>{error}</Notice>}
       {!!search && people === undefined && <Notice>Searching…</Notice>}
@@ -72,10 +72,13 @@ export function FriendManager() {
   );
 }
 
+// The search field and its button share one height so the row lines up.
+const SEARCH_HEIGHT = 32;
+
 const styles = StyleSheet.create({
   card: { padding: space.inset, gap: space.stack },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: space.stack },
-  input: { flex: 1, backgroundColor: colors.tile, color: colors.ink, fontFamily: fonts.regular, borderRadius: radius.field, padding: space.inset, fontSize: 15, minHeight: 48 },
+  input: { flex: 1, backgroundColor: colors.tile, color: colors.ink, fontFamily: fonts.regular, borderRadius: radius.field, paddingHorizontal: space.inset, paddingVertical: 0, fontSize: 15, height: SEARCH_HEIGHT },
   person: { flexDirection: 'row', alignItems: 'center', gap: space.stack, paddingVertical: space.inline },
   personCopy: { flex: 1, gap: space.inline },
   actions: { flexDirection: 'row', gap: space.stack },
