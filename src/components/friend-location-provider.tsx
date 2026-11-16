@@ -11,6 +11,7 @@ import { friendPushToken, listenForFriendNotifications, setFriendPushDisabled } 
 type Settings = NonNullable<ReturnType<typeof useQuery<typeof api.friendLocations.settings>>>;
 type LocationContext = {
   now: number;
+  queryNow: number;
   settings: Settings | undefined;
   status: string;
   error: string;
@@ -30,7 +31,10 @@ export function FriendLocationProvider({ children }: { children: ReactNode }) {
   const me = useQuery(api.users.me, {});
   const [backgroundEnabled, setBackgroundEnabled] = useState(false);
   const [now, setNow] = useState(Date.now);
-  const settings = useQuery(api.friendLocations.settings, { now });
+  // Expiry jobs invalidate location queries. Keep their arguments stable so a
+  // clock tick cannot clear forms, reset pagination, or restart the GPS watcher.
+  const [queryNow] = useState(Date.now);
+  const settings = useQuery(api.friendLocations.settings, { now: queryNow });
   const update = useMutation(api.friendLocations.updateLocation);
   const updateSettings = useMutation(api.friendLocations.updateSettings);
   const registerToken = useMutation(api.friendLocations.registerPushToken);
@@ -135,7 +139,7 @@ export function FriendLocationProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => setRevision(value => value + 1), []);
   const enablePush = useCallback(async () => {
     const value = await friendPushToken(true);
-    if (!value) { setPushMessage('Push alerts are unavailable or not allowed on this device. Your alerts are still available in Travi.'); return; }
+    if (!value) { setPushMessage('Phone notifications are unavailable in this build or are turned off in device settings.'); return; }
     await registerToken({ token: value, enabled: true }); token.current = value;
     await setFriendPushDisabled(false);
     setPushEnabled(true); setPushMessage('Push alerts are on for this device.');
@@ -152,7 +156,7 @@ export function FriendLocationProvider({ children }: { children: ReactNode }) {
     token.current = null; setPushEnabled(false); setPushMessage('Push alerts are off for this device.');
   }, [registerToken]);
 
-  return <Context.Provider value={{ now, settings, status: settings?.enabled ? backgroundEnabled ? 'Updates while open and in the background' : status : 'Location sharing is off', error, pushEnabled, pushMessage, backgroundEnabled, setBackground, enable, refresh, enablePush, disablePush }}>{children}</Context.Provider>;
+  return <Context.Provider value={{ now, queryNow, settings, status: settings?.enabled ? backgroundEnabled ? 'Updates while open and in the background' : status : 'Location sharing is off', error, pushEnabled, pushMessage, backgroundEnabled, setBackground, enable, refresh, enablePush, disablePush }}>{children}</Context.Provider>;
 }
 
 export function useFriendLocation() {

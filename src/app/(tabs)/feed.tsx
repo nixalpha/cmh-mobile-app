@@ -1,17 +1,17 @@
 import { useMutation, useQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
-import { LivePosts } from '@/components/live-post';
+import { FriendsPosts } from '@/components/friends-posts';
 import { AsyncIconButton, Notice, PlaceArt } from '@/components/live-ui';
 import { Glass } from '@/components/ui/glass';
 import { Screen } from '@/components/ui/screen';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Text } from '@/components/ui/text';
 import { radius, space } from '@/constants/theme';
-import { api } from '@/lib/backend';
+import { api, type Id } from '@/lib/backend';
 
 const segments = [
   { value: 'forYou', label: 'For you' },
@@ -24,13 +24,20 @@ function reasonLabel(reason: Recommendation['reason']) {
   switch (reason.kind) {
     case 'friends_top': return `In ${reason.count} ${reason.count === 1 ? 'friend’s' : 'friends’'} top places`;
     case 'friends_want': return `${reason.count} ${reason.count === 1 ? 'friend wants' : 'friends want'} to go`;
+    case 'visited_similar': return reason.sourceCount > 1
+      ? `Based on ${reason.source.name} and ${reason.sourceCount - 1} other ${reason.sourceCount === 2 ? 'visit' : 'visits'}`
+      : `${reason.basis === 'nearby' ? 'Near' : 'More places like'} ${reason.source.name}, which you visited`;
     case 'similar_to': return `${reason.basis === 'nearby' ? 'Near' : 'Similar to'} ${reason.source.name}`;
     case 'popular': return 'Popular';
   }
 }
 
 export default function FeedScreen() {
+  const params = useLocalSearchParams<{ tab?: string; friendId?: Id<'users'> }>();
   const [tab, setTab] = useState<(typeof segments)[number]['value']>('forYou');
+  useFocusEffect(useCallback(() => {
+    if (params.tab === 'friends') setTab('friends');
+  }, [params.tab]));
   const refresh = useMutation(api.recommendations.refresh);
   const [refreshError, setRefreshError] = useState(false);
 
@@ -53,7 +60,7 @@ export default function FeedScreen() {
         />
       )}>
       <SegmentedControl segments={segments} value={tab} onChange={setTab} />
-      {tab === 'forYou' ? <ForYou refreshError={refreshError} /> : <LivePosts mode="friends" />}
+      {tab === 'forYou' ? <ForYou refreshError={refreshError} /> : <FriendsPosts key={params.friendId ?? 'all'} initialActorId={params.friendId} />}
     </Screen>
   );
 }
@@ -67,11 +74,21 @@ function ForYou({ refreshError }: { refreshError: boolean }) {
       keyExtractor={(item) => item.destination._id}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.list}
-      ListHeaderComponent={refreshError ? <Notice>Couldn’t refresh. Try again.</Notice> : undefined}
+      ListHeaderComponent={
+        <View style={styles.intro}>
+          <Text variant="heading">Your next great trip</Text>
+          <Text variant="caption" color="muted">
+            {recommendations && recommendations.basedOn > 0
+              ? `Inspired by ${recommendations.basedOn} ${recommendations.basedOn === 1 ? 'place you’ve' : 'places you’ve'} visited. Add visits and rank your favorites to tune your picks.`
+              : 'A little inspiration to get started. Add places you’ve visited to make these picks yours.'}
+          </Text>
+          {refreshError && <Notice>Couldn’t refresh. Try again.</Notice>}
+        </View>
+      }
       ListEmptyComponent={
         <Notice>{recommendations === undefined || (recommendations.computedAt === null && !refreshError)
           ? 'Finding places for you…'
-          : 'Rank places or add friends for recommendations.'}</Notice>
+          : 'Add places you’ve visited to discover where to go next.'}</Notice>
       }
       renderItem={({ item, index }) => (
         <Glass
@@ -94,6 +111,7 @@ function ForYou({ refreshError }: { refreshError: boolean }) {
 
 const styles = StyleSheet.create({
   list: { gap: space.stack, paddingBottom: space.scrollBottom },
+  intro: { gap: space.inline },
   card: { overflow: 'hidden' },
   copy: { padding: space.inset, gap: space.inline },
 });

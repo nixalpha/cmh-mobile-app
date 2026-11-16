@@ -164,8 +164,58 @@ test("a new friend gets recent posts backfilled, and the feed filters by friend"
   await settle(t);
 
   expect((await feedOf(stranger)).map((p) => [p.type, p.destination.name])).toEqual([["saved", "Porto"], ["ranked", "Kyoto"]]);
+  expect((await feedOf(stranger, maya.id)).map((p) => p.destination.name)).toEqual(["Porto", "Kyoto"]);
   expect((await feedOf(sam)).map((p) => p.actor.handle)).toEqual(["stranger", "maya", "maya"]);
   expect((await feedOf(sam, stranger.id)).map((p) => p.destination.name)).toEqual(["Paris"]);
+});
+
+test("Find My and the feed use the same accepted friends without requiring location sharing", async () => {
+  const { t, places, maya, sam, stranger } = await world();
+  await stranger.as.mutation(api.friends.sendRequest, { userId: sam.id });
+  await rankFirst(maya, places.kyoto, {});
+  await rankFirst(stranger, places.paris, {});
+  await settle(t);
+
+  const people = async () => (await sam.as.query(api.friends.list, { paginationOpts: firstPage })).page.map(p => p._id).sort();
+  const findMy = async () => (await sam.as.query(api.friendLocations.friends, { now: Date.now(), paginationOpts: firstPage })).page;
+  expect(await people()).toEqual([maya.id]);
+  expect((await findMy()).map(p => p.user._id).sort()).toEqual(await people());
+  expect((await findMy())[0].location).toBeNull();
+  expect((await feedOf(sam)).map(p => p.actor._id)).toEqual([maya.id]);
+
+  await sam.as.mutation(api.friends.sendRequest, { userId: stranger.id });
+  await settle(t);
+  expect((await findMy()).map(p => p.user._id).sort()).toEqual(await people());
+  expect((await feedOf(sam)).map(p => p.actor._id).sort()).toEqual(await people());
+  expect((await findMy()).every(p => p.location === null)).toBe(true);
+
+  await sam.as.mutation(api.friends.unfriend, { userId: maya.id });
+  expect((await findMy()).map(p => p.user._id)).toEqual([stranger.id]);
+  expect((await feedOf(sam)).map(p => p.actor._id)).toEqual([stranger.id]);
+  expect(await people()).toEqual([stranger.id]);
+  await settle(t);
+});
+
+test("a friend's backfilled posts paginate newest first by post time", async () => {
+  const { t, places, maya, stranger } = await world();
+  await rankFirst(maya, places.kyoto, {});
+  await settle(t);
+  await maya.as.mutation(api.places.save, { destinationId: places.porto });
+  await settle(t);
+  await befriend(maya, stranger);
+  await settle(t);
+
+  const first = await stranger.as.query(api.feed.friends, {
+    actorId: maya.id, paginationOpts: { numItems: 1, cursor: null },
+  });
+  expect(first.page.map(p => p.destination.name)).toEqual(["Porto"]);
+  expect(first.isDone).toBe(false);
+  const next = await stranger.as.query(api.feed.friends, {
+    actorId: maya.id, paginationOpts: { numItems: 1, cursor: first.continueCursor },
+  });
+  expect(next.page.map(p => p.destination.name)).toEqual(["Kyoto"]);
+  expect(first.page[0].postedAt).toBeGreaterThan(next.page[0].postedAt);
+  expect(next.isDone).toBe(true);
 });
 
 test("ranking without posting, and onboarding visits, create nothing in the feed", async () => {

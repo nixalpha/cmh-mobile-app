@@ -158,7 +158,7 @@ export const friends = query({
     const result = await (actorId
       ? ctx.db
           .query("feedItems")
-          .withIndex("by_ownerId_and_actorId", (q) => q.eq("ownerId", viewer._id).eq("actorId", actorId))
+          .withIndex("by_ownerId_and_actorId_and_postedAt", (q) => q.eq("ownerId", viewer._id).eq("actorId", actorId))
       : ctx.db.query("feedItems").withIndex("by_ownerId_and_postedAt", (q) => q.eq("ownerId", viewer._id))
     )
       .order("desc")

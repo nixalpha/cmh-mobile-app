@@ -12,7 +12,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useConvexAuth, useQuery } from 'convex/react';
 
-import { FriendLocationBanner } from '@/components/friend-location-banner';
 import { FriendLocationProvider } from '@/components/friend-location-provider';
 import { AutoCollectionRunner } from '@/components/auto-collection';
 import { BackendProvider } from '@/components/backend-provider';
@@ -93,6 +92,7 @@ function SessionRoutes() {
       <Stack.Protected guard={isAuthenticated && (me === undefined || !!me?.handle)} redirectTo="/auth">
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="friends" />
+        <Stack.Screen name="friends-settings" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="place/[id]" />
         <Stack.Screen name="city/[id]" />
@@ -105,5 +105,5 @@ function SessionRoutes() {
 }
 
 function AuthenticatedLocationProvider({ enabled, children }: { enabled: boolean; children: import('react').ReactNode }) {
-  return enabled ? <FriendLocationProvider>{children}<FriendLocationBanner /></FriendLocationProvider> : children;
+  return enabled ? <FriendLocationProvider>{children}</FriendLocationProvider> : children;
 }

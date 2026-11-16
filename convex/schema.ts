@@ -212,6 +212,7 @@ export default defineSchema({
   })
     .index("by_ownerId_and_postedAt", ["ownerId", "postedAt"])
     .index("by_ownerId_and_actorId", ["ownerId", "actorId"])
+    .index("by_ownerId_and_actorId_and_postedAt", ["ownerId", "actorId", "postedAt"])
     .index("by_activityId_and_ownerId", ["activityId", "ownerId"]),
 
   likes: defineTable({

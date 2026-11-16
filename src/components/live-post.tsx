@@ -120,10 +120,11 @@ function VisitDetails({ visit }: { visit: NonNullable<Post['visit']> }) {
   );
 }
 
-export function LivePosts({ mode, actorId, header }: {
+export function LivePosts({ mode, actorId, header, emptyMessage }: {
   mode: 'mine' | 'friends';
   actorId?: Id<'users'>;
   header?: ReactElement;
+  emptyMessage?: string;
 }) {
   const mine = usePaginatedQuery(api.feed.byUser, mode === 'mine' ? {} : 'skip', { initialNumItems: 10 });
   const friends = usePaginatedQuery(api.feed.friends, mode === 'friends' ? { actorId } : 'skip', { initialNumItems: 10 });
@@ -136,11 +137,12 @@ export function LivePosts({ mode, actorId, header }: {
       renderItem={({ item }) => <LivePost post={item} />}
       ListHeaderComponent={header}
       showsVerticalScrollIndicator={false}
+      style={styles.feed}
       contentContainerStyle={styles.list}
       ListEmptyComponent={<Notice>{posts.status === 'LoadingFirstPage'
         ? 'Loading posts…'
-        : mode === 'mine' ? 'Your rankings, saves, and landmarks appear here.'
-          : 'No posts from friends yet.'}</Notice>}
+        : emptyMessage ?? (mode === 'mine' ? 'Your rankings, saves, and landmarks appear here.'
+          : 'No posts from friends yet.')}</Notice>}
       ListFooterComponent={posts.status === 'CanLoadMore'
         ? <AsyncButton label="Load more posts" variant="secondary" onPress={async () => posts.loadMore(10)} />
         : posts.status === 'LoadingMore' ? <Notice>Loading more posts…</Notice> : undefined}
@@ -149,6 +151,7 @@ export function LivePosts({ mode, actorId, header }: {
 }
 
 const styles = StyleSheet.create({
+  feed: { flex: 1 },
   list: { gap: space.stack, paddingBottom: space.scrollBottom },
   post: { padding: space.inset, gap: space.stack },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.stack },
