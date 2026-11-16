@@ -35,7 +35,7 @@ export function LivePost({ post }: { post: Post }) {
       <View style={styles.row}>
         <Avatar initials={personInitials(post.actor)} color={colors.canvas} ring={0} />
         <View style={styles.copy}>
-          <Text variant="label">{personName(post.actor)} {post.type} {placeName}</Text>
+          <Text variant="label">{personName(post.actor)} {post.type === 'posted' ? 'posted from' : post.type} {placeName}</Text>
           <Text variant="caption" color="muted">
             {new Date(post.postedAt).toLocaleDateString()} · {post.visibility === 'private' ? 'Only you' : 'Friends'}
           </Text>

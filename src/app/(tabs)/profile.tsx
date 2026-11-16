@@ -14,6 +14,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { CountDot } from '@/components/ui/badge';
 import { Chip } from '@/components/ui/chip';
 import { Glass } from '@/components/ui/glass';
+import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { colors, radius, space } from '@/constants/theme';
@@ -86,7 +87,8 @@ export default function ProfileScreen() {
   return (
     <Screen
       backdrop="profile"
-      headerActions={(
+      headerActions={(<>
+        <IconButton icon="plus" label="New post" onPress={() => router.push('/post/new')} />
         <AsyncIconButton icon="logOut" label="Sign out" onError={setSignOutError} onPress={async () => {
           setSignOutError('');
           await disableAutoCollection(client);
@@ -94,8 +96,8 @@ export default function ProfileScreen() {
           await disablePush();
           await signOut();
         }} />
-      )}>
-      <LivePosts mode="mine" header={header} footer={friendsSection} />
+      </>)}>
+      <LivePosts mode="mine" header={header} footer={friendsSection} emptyMessage="Tap + to post photos from a place you’ve been." />
     </Screen>
   );
 }
