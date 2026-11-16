@@ -23,6 +23,15 @@ New accounts go through onboarding once: the app reads where your photos were ta
 
 In development, tap **Dev mode — skip onboarding** on the welcome or sign-in screen (or open `/dev` on web) to go straight to Discover. The shortcut creates a test account for this device/browser, completes its profile, and reuses it on later visits. It uses the configured Convex deployment and the usual authenticated APIs. Sign out from Profile to return to sign-in. The shortcut and `/dev` are disabled in production builds.
 
+### Mock users
+
+`convex/seed.ts` fills a dev deployment with 12 mock travelers for one account (pass its handle). Each gets visits, a ranked list, landmark unlocks (some with photos), saves, feed posts with likes and comments, and a live location. Nine become friends with the account and share their location with it; the last three send it friend requests. A scheduled job moves their locations slightly every 6 hours so they never go stale, and stops once the mock users are gone. It needs the destination catalog imported first.
+
+```sh
+bunx convex run seed:run '{"target":"12345"}'
+bunx convex run seed:clear '{"target":"12345"}'
+```
+
 ## Checks
 
 ```sh
