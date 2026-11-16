@@ -19,6 +19,8 @@ bunx expo start
 
 Use `bun run web` for the web app. Native development builds can be created with `bunx eas-cli build --profile development`.
 
+New accounts go through onboarding once: the app reads where your photos were taken (on device, nothing uploaded) to suggest the cities you've visited, then asks for each permission. Completion is stored on the account (`users.onboardedAt`).
+
 In development, tap **Dev mode — skip onboarding** on the welcome or sign-in screen (or open `/dev` on web) to go straight to Discover. The shortcut creates a test account for this device/browser, completes its profile, and reuses it on later visits. It uses the configured Convex deployment and the usual authenticated APIs. Sign out from Profile to return to sign-in. The shortcut and `/dev` are disabled in production builds.
 
 ## Checks
@@ -45,7 +47,7 @@ Rebuild the logo exports, icons, social graphics, and kit on macOS with `sh scri
 
 Open **Discover → Find my friends** (also available from Profile). Open **Sharing and phone notifications** from the People panel to enable location access and choose individual accepted friends who can see your precise location. Sharing is off by default. A friend must separately opt in to share back. Removing or blocking a friend clears both grants; pausing sharing deletes the current location and revokes background device credentials.
 
-The globe shows shared locations with accuracy and update times. Nearby alerts use a 10 km radius and account for GPS uncertainty. Your visiting city is set from each location update: the device's geocoded city name when it matches a catalog city within 50 km, otherwise the city that owns the nearest landmark within 25 km. City alerts fire for friends in that city. Alerts are limited to one per friend/type/city each day and delivered as phone push notifications. The map has one People view; sharing and notification controls live on a separate settings screen. Locations expire and are deleted after 24 hours without a new update.
+Your own position shows on Discover and Find my friends from the device alone (tap the compass), even with sharing off; nothing is uploaded until you share. To share with someone, open them in the People panel and tap **Share my location**. The globe shows shared locations with accuracy and update times. Nearby alerts use a 10 km radius and account for GPS uncertainty. Your visiting city is set from each location update: the device's geocoded city name when it matches a catalog city within 50 km, otherwise the city that owns the nearest landmark within 25 km. City alerts fire for friends in that city. Alerts are limited to one per friend/type/city each day and delivered as phone push notifications. The map has one People view; sharing and notification controls live on a separate settings screen. Locations expire and are deleted after 24 hours without a new update.
 
 Foreground updates work on iOS, Android, and web. The optional **Update while Travi is closed** switch requires background permission in an installed native build; device power management and force-quitting can stop updates. Background tasks use a scoped device credential stored in SecureStore, never a long-lived login token. Signing out stops that device's task and unregisters its push token.
 
