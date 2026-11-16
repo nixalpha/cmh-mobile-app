@@ -1,5 +1,5 @@
 import { useSignInWithUsernamePassword, useSignUpWithUsernamePassword } from '@convex-dev/auth/methods/username-password/react';
-import { useConvexAuth, useQuery } from 'convex/react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -15,6 +15,7 @@ export function DevSession() {
   const me = useQuery(api.users.me, isAuthenticated ? {} : 'skip');
   const { signIn } = useSignInWithUsernamePassword(api.auth);
   const { signUp } = useSignUpWithUsernamePassword(api.auth);
+  const completeOnboarding = useMutation(api.users.completeOnboarding);
   const [error, setError] = useState('');
   const started = useRef(false);
   const opening = useRef(false);
@@ -46,8 +47,13 @@ export function DevSession() {
     }
   }, [isAuthenticated, open]);
 
+  // Dev mode skips onboarding, so mark the test account as onboarded.
+  useEffect(() => {
+    if (me?.handle && !me.onboarded) void completeOnboarding({}).catch(() => setError('Could not skip onboarding. Try again.'));
+  }, [me?.handle, me?.onboarded, completeOnboarding]);
+
   if (!__DEV__) return <Redirect href="/" />;
-  if (isAuthenticated && me?.handle) return <Redirect href="/discover" />;
+  if (isAuthenticated && me?.handle && me.onboarded) return <Redirect href="/discover" />;
   if (isAuthenticated && me) return <ProfileSetup />;
 
   return (

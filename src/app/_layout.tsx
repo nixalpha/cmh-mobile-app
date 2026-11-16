@@ -82,7 +82,9 @@ export default function RootLayout() {
 function SessionRoutes() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const me = useQuery(api.users.me, isAuthenticated ? {} : 'skip');
-  if (isLoading || (isAuthenticated && me === undefined)) return <Screen><Notice>Opening travi…</Notice></Screen>;
+  // Keep the navigator mounted while `me` loads. Swapping it for a loader resets
+  // navigation, which used to drop new accounts on Feed instead of onboarding.
+  if (isLoading) return <Screen><Notice>Opening travi…</Notice></Screen>;
   return (
     <AuthenticatedLocationProvider enabled={isAuthenticated && !!me?.handle}>
     <AutoCollectionRunner userId={isAuthenticated ? me?._id : null} />

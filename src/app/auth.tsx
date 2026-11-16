@@ -32,7 +32,7 @@ export default function AuthScreen() {
   const { signUp, pending: signingUp } = useSignUpWithUsernamePassword(api.auth);
   if (isAuthenticated && !me) return <Screen><Notice>Opening your account…</Notice></Screen>;
   if (isAuthenticated && me && !me.handle) return <ProfileSetup />;
-  if (isAuthenticated && me?.handle) return <Redirect href={signup ? '/onboarding' : '/feed'} />;
+  if (isAuthenticated && me?.handle) return <Redirect href={me.onboarded ? '/feed' : '/onboarding'} />;
   const submit = async () => {
     setError('');
     const name = username.trim().toLowerCase();
