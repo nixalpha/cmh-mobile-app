@@ -89,6 +89,14 @@ export default defineSchema({
       filterFields: ["status"],
     }),
 
+  // Wikipedia blurb per landmark, fetched the first time someone opens it and kept from then on.
+  landmarkSummaries: defineTable({
+    landmarkId: v.id("landmarks"),
+    summary: v.union(v.string(), v.null()),
+    wikipediaUrl: v.union(v.string(), v.null()),
+    fetchedAt: v.number(),
+  }).index("by_landmarkId", ["landmarkId"]),
+
   destinationNeighbors: defineTable({
     destinationId: v.id("destinations"),
     neighborId: v.id("destinations"),

@@ -16,6 +16,7 @@ import type * as destinations from "../destinations.js";
 import type * as feed from "../feed.js";
 import type * as friendLocations from "../friendLocations.js";
 import type * as friends from "../friends.js";
+import type * as landmarkSummaries from "../landmarkSummaries.js";
 import type * as landmarkVisits from "../landmarkVisits.js";
 import type * as landmarks from "../landmarks.js";
 import type * as lib_activities from "../lib/activities.js";
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   feed: typeof feed;
   friendLocations: typeof friendLocations;
   friends: typeof friends;
+  landmarkSummaries: typeof landmarkSummaries;
   landmarkVisits: typeof landmarkVisits;
   landmarks: typeof landmarks;
   "lib/activities": typeof lib_activities;
