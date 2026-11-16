@@ -95,12 +95,6 @@
         {
           "color": "#909DC3"
         }
-      ],
-      [
-        "expo-contacts",
-        {
-          "contactsPermission": "Travi checks your contacts' phone numbers to find friends already on Travi. Numbers are hashed on your device first."
-        }
       ]
     ],
     "experiments": {
