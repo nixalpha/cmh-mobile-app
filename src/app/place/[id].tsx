@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from 'convex/react';
+import { useConvex, useMutation, useQuery } from 'convex/react';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AsyncButton, AsyncIconButton, Notice, PhotoCredit, PlaceArt } from '@/components/live-ui';
@@ -11,6 +11,8 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { api, type Id } from '@/lib/backend';
+import { importCityPhotos } from '@/lib/import-city-photos';
+import { photoLibrarySupported } from '@/lib/photo-library';
 import { colors, radius, space } from '@/constants/theme';
 
 export default function PlaceScreen() {
@@ -24,6 +26,7 @@ export default function PlaceScreen() {
   const addVisit = useMutation(api.places.addVisit);
   const lock = useMutation(api.places.lockLandmark);
   const [saveError, setSaveError] = useState('');
+  const importNote = usePhotoImport(detail, landmarks);
   // Arriving from a landmark pin on the map: bring that landmark's card into view once it is laid out.
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const offsets = useRef<{ list?: number; card?: number; done?: boolean }>({});
@@ -72,6 +75,7 @@ export default function PlaceScreen() {
           <View style={styles.landmarks} onLayout={(event) => revealLandmark({ list: event.nativeEvent.layout.y })}>
             <Text variant="title2">Landmarks</Text>
             <Text color="slate">{detail.viewer.visit?.unlockCount ?? 0}/{detail.destination.landmarkCount} collected</Text>
+            {!!importNote && <Notice>{importNote}</Notice>}
             {!detail.viewer.visit && <Notice>Mark this place as visited to add landmarks.</Notice>}
             {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, photoCount, coverUrl }) => {
               const openVisit = () => router.push({ pathname: '/landmark-visit/[id]', params: { id: landmark._id } });
@@ -113,6 +117,43 @@ export default function PlaceScreen() {
       )}
     </Screen>
   );
+}
+
+type Detail = ReturnType<typeof useQuery<typeof api.places.destination>>;
+type Landmarks = ReturnType<typeof useQuery<typeof api.places.landmarkProgress>>;
+
+/**
+ * The first time a visited place opens, adds the camera roll's past photos from it: landmarks
+ * they were taken at are collected with those photos, and the rest become a post.
+ */
+function usePhotoImport(detail: Detail, landmarks: Landmarks) {
+  const client = useConvex();
+  const [note, setNote] = useState('');
+  const started = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const ready = photoLibrarySupported && !!detail?.viewer.visit && !detail.viewer.visit.photosImported && landmarks !== undefined;
+  useEffect(() => {
+    if (!ready || started.current || !detail || !landmarks) return;
+    started.current = true;
+    const name = detail.destination.name;
+    setNote(`Adding your photos from ${name}…`);
+    importCityPhotos(client, detail.destination, landmarks.map(({ landmark }) => landmark))
+      .then((result) => {
+        if (!mounted.current) return;
+        if (result === null) setNote(`Allow photo access to add your photos from ${name}.`);
+        else if (result.photos === 0) setNote('');
+        else {
+          const collected = result.landmarks > 0 ? ` and collected ${result.landmarks} ${result.landmarks === 1 ? 'landmark' : 'landmarks'}` : '';
+          setNote(`Added ${result.photos} ${result.photos === 1 ? 'photo' : 'photos'}${collected} from your camera roll.`);
+        }
+      })
+      .catch(() => { if (mounted.current) setNote('Couldn’t add your photos. Open this place again to retry.'); });
+  }, [ready, client, detail, landmarks]);
+  return note;
 }
 
 const styles = StyleSheet.create({
