@@ -11,7 +11,7 @@ export type TextProps = RNTextProps & {
 export function Text({ variant = 'body', color = 'ink', weight, style, ...rest }: TextProps) {
   return (
     <RNText
-      style={[type[variant], { color: colors[color] }, weight && { fontFamily: fonts[weight] }, style]}
+      style={[type[variant], { color: color === 'accent' ? colors.accentText : colors[color] }, weight && { fontFamily: fonts[weight] }, style]}
       {...rest}
     />
   );

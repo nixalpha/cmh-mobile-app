@@ -4,8 +4,12 @@ import { openURL } from 'expo-linking';
 import { useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/ui/button';
+import type { IconName } from '@/components/ui/icon';
+import { IconButton, type IconButtonProps } from '@/components/ui/icon-button';
 import { Text } from '@/components/ui/text';
+import { colors, radius, space } from '@/constants/theme';
 
 export function errorMessage(error: unknown) {
   if (error instanceof ConvexError && typeof error.data === 'object' && error.data !== null && 'message' in error.data) {
@@ -44,10 +48,43 @@ export function AsyncButton({ label, onPress, variant = 'primary', disabled = fa
 
 export type PlaceImage = { url: string; credit: string; license: string; sourceUrl: string };
 
+// Compact action: an icon with an accessible label. Errors go to onError so the
+// caller can show them where they fit instead of under the icon.
+export function AsyncIconButton({ icon, label, onPress, onError, variant = 'glass', size, selected, disabled = false }: {
+  icon: IconName;
+  label: string;
+  onPress: () => Promise<unknown>;
+  onError?: (message: string) => void;
+  variant?: IconButtonProps['variant'];
+  size?: number;
+  selected?: boolean;
+  disabled?: boolean;
+}) {
+  const locked = useRef(false);
+  const [pending, setPending] = useState(false);
+  return (
+    <IconButton
+      icon={icon}
+      label={label}
+      variant={variant}
+      size={size}
+      selected={selected}
+      disabled={disabled || pending}
+      onPress={async () => {
+        if (locked.current) return;
+        locked.current = true;
+        setPending(true);
+        try { await onPress(); } catch (cause) { onError?.(errorMessage(cause)); }
+        finally { locked.current = false; setPending(false); }
+      }}
+    />
+  );
+}
+
 export function PlaceArt({ place, height = 140 }: { place?: { _id: string; image: PlaceImage | null }; height?: number }) {
   return (
     <View style={[styles.art, { height }]} accessible={false}>
-      {place?.image && (
+      {place?.image ? (
         <Image
           source={{ uri: place.image.url }}
           style={StyleSheet.absoluteFill}
@@ -56,7 +93,7 @@ export function PlaceArt({ place, height = 140 }: { place?: { _id: string; image
           recyclingKey={place._id}
           cachePolicy="disk"
         />
-      )}
+      ) : <BrandLogo symbol height={32} decorative />}
     </View>
   );
 }
@@ -78,7 +115,7 @@ export function PhotoCredit({ image }: { image: PlaceImage | null }) {
 }
 
 const styles = StyleSheet.create({
-  action: { gap: 6 },
-  art: { borderRadius: 22, overflow: 'hidden', backgroundColor: '#DCE6EB' },
-  credit: { marginTop: -4, paddingHorizontal: 4 },
+  action: { gap: space.inline },
+  art: { borderRadius: radius.card, overflow: 'hidden', backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  credit: { marginTop: -4, paddingHorizontal: space.inline },
 });

@@ -1,0 +1,10 @@
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  root: fileURLToPath(new URL('.', import.meta.url)),
+  build: {
+    outDir: '.build', emptyOutDir: true, target: 'es2022',
+    lib: { entry: 'src/embed.ts', name: 'TraviCartoonGlobe', formats: ['iife'], fileName: () => 'globe.js' },
+  },
+});

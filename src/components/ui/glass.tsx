@@ -3,7 +3,7 @@ import { useState, type ElementType } from 'react';
 import { Pressable, StyleSheet, View, type ViewProps } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 
-import { glass, shadows } from '@/constants/theme';
+import { glass, shadows, radius as radii } from '@/constants/theme';
 
 export type GlassProps = ViewProps & {
   radius?: number;
@@ -12,15 +12,17 @@ export type GlassProps = ViewProps & {
   flat?: boolean;
   borderColor?: string;
   onPress?: () => void;
+  disabled?: boolean;
 };
 
 export function Glass({
-  radius = 24,
+  radius = radii.card,
   variant = 'regular',
   dashed,
   flat,
   borderColor,
   onPress,
+  disabled,
   style,
   children,
   ...rest
@@ -32,6 +34,7 @@ export function Glass({
   return (
     <Container
       onPress={onPress}
+      {...(onPress && { disabled })}
       style={[
         { borderRadius: radius },
         !flat && variant === 'regular' && { boxShadow: shadows.glass },

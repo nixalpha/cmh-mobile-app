@@ -1,6 +1,7 @@
 import type { Tabs } from 'expo-router/js-tabs';
 import { useEffect, type ComponentProps } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { Glass } from '@/components/ui/glass';
@@ -12,7 +13,7 @@ import {
   useSlidingIndicator,
   type SlidingIndicator,
 } from '@/components/ui/sliding-indicator';
-import { colors, space } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
@@ -25,26 +26,32 @@ const tabs: Record<string, { icon: IconName; label: string }> = {
 
 export function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
   const indicator = useSlidingIndicator(state.index);
+  const insets = useSafeAreaInsets();
+  const bottom = Math.max(insets.bottom, space.tabBarBottom);
   return (
-    <Glass radius={space.tabBarHeight / 2} style={styles.bar} accessibilityRole="tablist">
-      <IndicatorPill indicator={indicator} style={styles.pill} />
-      {state.routes.map((route, index) => {
-        const focused = state.index === index;
-        return (
-          <TabButton
-            key={route.key}
-            tab={tabs[route.name]}
-            index={index}
-            focused={focused}
-            indicator={indicator}
-            onPress={() => {
-              const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-              if (!focused && !event.defaultPrevented) navigateToTab(route.key);
-            }}
-          />
-        );
-      })}
-    </Glass>
+    <View pointerEvents="box-none" style={[styles.position, { bottom, left: insets.left, right: insets.right }]}>
+      <View pointerEvents="box-none" style={styles.frame}>
+        <Glass radius={radius.card} style={styles.bar} accessibilityRole="tablist">
+          <IndicatorPill indicator={indicator} style={styles.pill} />
+          {state.routes.map((route, index) => {
+            const focused = state.index === index;
+            return (
+              <TabButton
+                key={route.key}
+                tab={tabs[route.name]}
+                index={index}
+                focused={focused}
+                indicator={indicator}
+                onPress={() => {
+                  const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                  if (!focused && !event.defaultPrevented) navigateToTab(route.key);
+                }}
+              />
+            );
+          })}
+        </Glass>
+      </View>
+    </View>
   );
 }
 
@@ -86,7 +93,7 @@ function TabButton({
           indicator={indicator}
           index={index}
           inactive={<Icon name={tab.icon} size={22} color={colors.slate} />}
-          active={<Icon name={tab.icon} size={22} color={colors.white} />}
+          active={<Icon name={tab.icon} size={22} color={colors.accentForeground} />}
         />
       </Animated.View>
     </Pressable>
@@ -94,17 +101,18 @@ function TabButton({
 }
 
 const styles = StyleSheet.create({
-  bar: {
+  position: {
     position: 'absolute',
-    left: space.gutter,
-    right: space.gutter,
-    bottom: space.tabBarBottom,
+    alignItems: 'center',
+  },
+  frame: { width: '100%', maxWidth: space.screenMaxWidth, paddingHorizontal: space.gutter },
+  bar: {
     height: space.tabBarHeight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 8,
+    paddingHorizontal: space.stack,
   },
-  tab: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  pill: { borderRadius: 26, backgroundColor: colors.ink },
+  tab: { width: 52, height: 52, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center' },
+  pill: { borderRadius: radius.card, backgroundColor: colors.accent },
 });

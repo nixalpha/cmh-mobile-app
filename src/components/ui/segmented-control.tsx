@@ -4,7 +4,7 @@ import { Glass } from '@/components/ui/glass';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { IndicatorItem, IndicatorPill, useSlidingIndicator } from '@/components/ui/sliding-indicator';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export type Segment<T extends string> = { value: T; label: string; icon?: IconName };
 
@@ -44,7 +44,7 @@ export function SegmentedControl<T extends string>({
   );
 
   return (
-    <Glass radius={layout === 'fill' ? 24 : layout === 'icons' ? 25 : 22} style={[styles.track, layout !== 'fill' && styles.tight, style]}>
+    <Glass radius={radius.field} style={[styles.track, layout !== 'fill' && styles.tight, style]}>
       <IndicatorPill indicator={indicator} style={[styles.pill, { borderRadius: styles[layout].borderRadius }]} />
       {segments.map((segment, index) => (
         <Pressable
@@ -59,7 +59,7 @@ export function SegmentedControl<T extends string>({
             indicator={indicator}
             index={index}
             inactive={content(segment, colors.slate)}
-            active={content(segment, colors.white)}
+            active={content(segment, colors.accentForeground)}
           />
         </Pressable>
       ))}
@@ -68,12 +68,12 @@ export function SegmentedControl<T extends string>({
 }
 
 const styles = StyleSheet.create({
-  track: { flexDirection: 'row', padding: 4, gap: 4 },
-  tight: { gap: 2 },
-  segment: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  fill: { flex: 1, height: 40, borderRadius: 20 },
-  compact: { height: 36, paddingHorizontal: 14, borderRadius: 18 },
-  icons: { width: 42, height: 42, borderRadius: 21 },
-  pill: { backgroundColor: colors.ink },
+  track: { flexDirection: 'row', padding: space.inline, gap: space.inline },
+  tight: { gap: space.fine },
+  segment: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.inline },
+  fill: { flex: 1, height: 40, borderRadius: radius.inner },
+  compact: { height: 36, paddingHorizontal: space.inset, borderRadius: radius.inner },
+  icons: { width: 42, height: 42, borderRadius: radius.inner },
+  pill: { backgroundColor: colors.accent },
   compactLabel: { fontSize: 13, lineHeight: 18 },
 });

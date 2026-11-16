@@ -1,15 +1,17 @@
 import { useMutation, useQuery } from 'convex/react';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AsyncButton, Notice, PhotoCredit, PlaceArt } from '@/components/live-ui';
+import { AsyncButton, AsyncIconButton, Notice, PhotoCredit, PlaceArt } from '@/components/live-ui';
 import { Button } from '@/components/ui/button';
 import { Glass } from '@/components/ui/glass';
 import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { api, type Id } from '@/lib/backend';
+import { radius, space } from '@/constants/theme';
 
 export default function PlaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,13 +23,25 @@ export default function PlaceScreen() {
   const unsave = useMutation(api.places.unsave);
   const addVisit = useMutation(api.places.addVisit);
   const lock = useMutation(api.places.lockLandmark);
+  const [saveError, setSaveError] = useState('');
 
   return (
-    <Screen backdrop="place" scroll>
-      <View style={styles.bar}>
+    <Screen backdrop="place" scroll headerActions={<>
         <IconButton icon="arrowLeft" label="Back" onPress={() => router.back()} />
-        <Text variant="cardTitle">Place details</Text>
-      </View>
+        {destinationId && detail && (
+          <AsyncIconButton
+            icon={detail.viewer.saved ? 'bookmarkFilled' : 'bookmark'}
+            label={detail.viewer.saved ? 'Remove from want to go' : 'Want to go'}
+            selected={detail.viewer.saved}
+            onError={setSaveError}
+            onPress={async () => {
+              setSaveError('');
+              await (detail.viewer.saved ? unsave({ destinationId }) : save({ destinationId }));
+            }}
+          />
+        )}
+      </>}>
+      {!!saveError && <Notice>{saveError}</Notice>}
       {!destinationId || catalog === null ? <Notice>Place not found.</Notice> : !detail ? <Notice>Loading place…</Notice> : (
         <>
           <PlaceArt place={detail.destination} height={200} />
@@ -41,19 +55,14 @@ export default function PlaceScreen() {
               <Text color="slate">{detail.friends.visitedCount} friends have visited</Text>
             )}
             {detail.friends.averageScore !== null && (
-              <Text variant="caption" color="muted">Friends’ average score: {detail.friends.averageScore.toFixed(1)}</Text>
+              <Text variant="caption" color="muted">Friends’ avg: {detail.friends.averageScore.toFixed(1)}</Text>
             )}
-            {detail.viewer.visit ? <Notice>In your visited places</Notice> : (
+            {detail.viewer.visit ? <Notice>Visited</Notice> : (
               <AsyncButton label="I’ve been here" onPress={() => addVisit({ destinationId })} />
             )}
             {detail.viewer.rank === null && (
               <Button label="Rank this place" icon="rank" onPress={() => router.push({ pathname: '/rank/[id]', params: { id: destinationId } })} />
             )}
-            <AsyncButton
-              label={detail.viewer.saved ? 'Remove from want to go' : 'Want to go'}
-              variant="secondary"
-              onPress={() => detail.viewer.saved ? unsave({ destinationId }) : save({ destinationId })}
-            />
           </Glass>
           <View style={styles.landmarks}>
             <Text variant="title2">Landmarks</Text>
@@ -97,10 +106,9 @@ export default function PlaceScreen() {
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  card: { padding: 20, gap: 12 },
-  landmarks: { gap: 12 },
-  landmarkRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  landmarkCopy: { flex: 1, gap: 4 },
-  cover: { width: 64, height: 64, borderRadius: 14 },
+  card: { padding: space.inset, gap: space.stack },
+  landmarks: { gap: space.stack },
+  landmarkRow: { flexDirection: 'row', gap: space.inset, alignItems: 'center' },
+  landmarkCopy: { flex: 1, gap: space.inline },
+  cover: { width: 64, height: 64, borderRadius: radius.card },
 });

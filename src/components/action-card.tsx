@@ -3,7 +3,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Glass } from '@/components/ui/glass';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius as radii, space } from '@/constants/theme';
 
 export type ActionCardProps = {
   icon: IconName;
@@ -16,7 +16,7 @@ export type ActionCardProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-export function ActionCard({ icon, title, subtitle, dashed, round, radius = 24, onPress, style }: ActionCardProps) {
+export function ActionCard({ icon, title, subtitle, dashed, round, radius = radii.card, onPress, style }: ActionCardProps) {
   return (
     <Glass
       radius={radius}
@@ -28,7 +28,7 @@ export function ActionCard({ icon, title, subtitle, dashed, round, radius = 24, 
       accessibilityRole="button"
       style={[styles.card, style]}>
       <View style={[styles.icon, round && styles.round]}>
-        <Icon name={icon} size={20} color={colors.white} />
+        <Icon name={icon} size={20} color={colors.accentForeground} />
       </View>
       <View style={styles.copy}>
         <Text weight={dashed ? 'extrabold' : 'bold'}>{title}</Text>
@@ -41,15 +41,15 @@ export function ActionCard({ icon, title, subtitle, dashed, round, radius = 24, 
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: space.stack, padding: space.inset },
   icon: {
     width: 44,
     height: 44,
-    borderRadius: 14,
-    backgroundColor: colors.ink,
+    borderRadius: radii.card,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  round: { borderRadius: 22 },
-  copy: { flex: 1, gap: 2 },
+  round: { borderRadius: radii.card },
+  copy: { flex: 1, gap: space.fine },
 });

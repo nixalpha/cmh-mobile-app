@@ -1,7 +1,7 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export type BadgeProps = {
   label: string;
@@ -15,13 +15,13 @@ export function Badge({ label, variant = 'ink', height = 30, style }: BadgeProps
     <View
       style={[
         styles.base,
-        { height, minWidth: height, borderRadius: height / 2 },
+        { height, minWidth: height, borderRadius: radius.control },
         variant === 'ink' ? styles.ink : styles.tint,
         style,
       ]}>
       <Text
         weight="extrabold"
-        color={variant === 'ink' ? 'white' : 'ink'}
+        color="ink"
         style={{ fontSize: height >= 32 ? 13 : 12, lineHeight: 17 }}>
         {label}
       </Text>
@@ -39,7 +39,7 @@ export function CountDot({ label, inverted, size = 24 }: { label: string; invert
       ]}>
       <Text
         weight={size > 24 ? 'extrabold' : 'bold'}
-        color={inverted ? 'ink' : 'white'}
+        color="ink"
         style={{ fontSize: size > 24 ? 11 : 12, lineHeight: 16 }}>
         {label}
       </Text>
@@ -48,9 +48,9 @@ export function CountDot({ label, inverted, size = 24 }: { label: string; invert
 }
 
 const styles = StyleSheet.create({
-  base: { paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
-  ink: { backgroundColor: colors.ink },
-  tint: { backgroundColor: colors.inkTint },
+  base: { paddingHorizontal: space.inset, alignItems: 'center', justifyContent: 'center' },
+  ink: { backgroundColor: colors.accent },
+  tint: { backgroundColor: colors.accentSoft },
   dot: { alignItems: 'center', justifyContent: 'center' },
   dotInverted: { backgroundColor: colors.white },
 });

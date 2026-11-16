@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
@@ -9,11 +10,13 @@ export type SectionHeaderProps = {
   trailing?: string;
   variant?: Extract<TextVariant, 'heading' | 'subheading'>;
   onTrailingPress?: () => void;
+  /** Compact control (usually an IconButton) shown instead of trailing text. */
+  action?: ReactNode;
 };
 
-export function SectionHeader({ title, count, trailing, variant = 'subheading', onTrailingPress }: SectionHeaderProps) {
+export function SectionHeader({ title, count, trailing, variant = 'subheading', onTrailingPress, action }: SectionHeaderProps) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, !!action && styles.withAction]}>
       <Text variant={variant} accessibilityRole="header">
         {title}
         {count !== undefined && (
@@ -23,7 +26,8 @@ export function SectionHeader({ title, count, trailing, variant = 'subheading', 
           </Text>
         )}
       </Text>
-      {trailing &&
+      {action}
+      {!action && trailing &&
         (onTrailingPress ? (
           <Pressable onPress={onTrailingPress} accessibilityRole="button" hitSlop={12}>
             <Text variant="meta" weight="bold">
@@ -41,4 +45,5 @@ export function SectionHeader({ title, count, trailing, variant = 'subheading', 
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  withAction: { alignItems: 'center' },
 });

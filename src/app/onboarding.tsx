@@ -11,6 +11,7 @@ import { Screen } from '@/components/ui/screen';
 import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
 import { api, type Id } from '@/lib/backend';
+import { space } from '@/constants/theme';
 
 export default function OnboardingScreen() {
   const [selected, setSelected] = useState<{ id: Id<'destinations'>; name: string }[]>([]);
@@ -51,7 +52,6 @@ export default function OnboardingScreen() {
   return (
     <Screen backdrop="onboarding" scroll>
       <Text variant="title" accessibilityRole="header">Where have you been?</Text>
-      <Text color="slate">Add cities and islands you’ve visited. Rank them later, in your own order.</Text>
       <SearchField placeholder="Search places" value={query} onChangeText={setQuery} />
       <Text variant="cardTitle">{search ? 'Search results' : 'Popular places'}</Text>
       {places === undefined || query.trim() !== search ? <Notice>Finding places…</Notice> : (
@@ -69,7 +69,7 @@ export default function OnboardingScreen() {
         </View>
       )}
       <Glass style={styles.summary}>
-        <Text variant="cardTitle">{selected.length} of 20 places selected</Text>
+        <Text variant="cardTitle">{selected.length} of 20 selected</Text>
         {selected.length > 0 && (
           <View style={styles.chips}>
             {selected.map((place) => (
@@ -77,16 +77,14 @@ export default function OnboardingScreen() {
             ))}
           </View>
         )}
-        <Text variant="caption" color="muted">Visits are self-reported. If saving is interrupted, retry Continue; already-added visits won’t be duplicated.</Text>
-        {selected.length === 20 && <Notice>You’ve reached the limit for this batch. Add more later.</Notice>}
         <AsyncButton label="Continue" onPress={continueToApp} />
-        {!saving && <Button label="Skip for now" variant="link" onPress={() => router.replace('/feed')} />}
+        {!saving && <Button label="Skip" variant="link" onPress={() => router.replace('/feed')} />}
       </Glass>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  summary: { padding: 20, gap: 14 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.stack },
+  summary: { padding: space.inset, gap: space.stack },
 });

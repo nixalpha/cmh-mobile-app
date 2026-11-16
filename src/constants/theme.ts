@@ -1,26 +1,32 @@
 import type { TextStyle } from 'react-native';
 
+import { brand } from '@/constants/brand';
+
 export const colors = {
-  ink: '#0E1116',
-  inkSoft: '#1E2530',
-  slate: '#3A4250',
-  muted: '#4A5361',
+  ink: brand.ink,
+  inkSoft: '#343C55',
+  slate: '#49516A',
+  muted: '#606981',
   white: '#FFFFFF',
-  canvas: '#E8EDF3',
+  canvas: brand.mist,
+  accent: brand.tile,
+  accentForeground: brand.ink,
+  accentText: brand.action,
+  accentSoft: brand.mist,
   alert: '#D9533F',
-  inkTint: 'rgba(14,17,22,0.08)',
-  inkFaint: 'rgba(14,17,22,0.25)',
-  inkLine: 'rgba(14,17,22,0.12)',
+  inkTint: 'rgba(36,42,61,0.08)',
+  inkFaint: 'rgba(36,42,61,0.25)',
+  inkLine: 'rgba(36,42,61,0.12)',
   tile: 'rgba(255,255,255,0.6)',
   tileStrong: 'rgba(255,255,255,0.7)',
 } as const;
 
-export type TextColor = 'ink' | 'inkSoft' | 'slate' | 'muted' | 'white';
+export type TextColor = 'ink' | 'inkSoft' | 'slate' | 'muted' | 'white' | 'accent' | 'accentText';
 
 export const washes = {
-  peach: '255,219,180',
-  butter: '255,243,117',
-  sky: '199,226,255',
+  lavender: brand.tile,
+  paper: brand.paper,
+  mist: brand.mist,
 } as const;
 
 export const glass = {
@@ -42,37 +48,45 @@ export const shadows = {
   cardSmall: '0 14px 30px rgba(30,45,70,0.14)',
 } as const;
 
+// Shared geometry: compact surfaces with a smaller inset for nested controls.
 export const radius = {
-  tile: 16,
-  field: 18,
-  card: 24,
-  panel: 30,
-  hero: 32,
-  sheet: 34,
+  control: 8,
+  inner: 4,
+  tile: 8,
+  field: 8,
+  card: 8,
+  panel: 8,
+  hero: 8,
+  sheet: 8,
 } as const;
 
 export const space = {
   gutter: 20,
-  stack: 16,
+  screenMaxWidth: 560,
+  screenTop: 16,
+  stack: 8,
+  inset: 12,
+  inline: 4,
+  fine: 2,
   tabBarHeight: 68,
-  tabBarBottom: 24,
+  tabBarBottom: 12,
   scrollBottom: 120,
 } as const;
 
 export const fonts = {
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_500Medium',
-  semibold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  extrabold: 'PlusJakartaSans_800ExtraBold',
+  regular: 'Nunito_400Regular',
+  medium: 'Nunito_500Medium',
+  semibold: 'Nunito_600SemiBold',
+  bold: 'Nunito_700Bold',
+  extrabold: 'Nunito_800ExtraBold',
 } as const;
 
 export type FontWeight = keyof typeof fonts;
 
 export const type = {
-  display: { fontFamily: fonts.extrabold, fontSize: 40, lineHeight: 41, letterSpacing: -1.6 },
-  hero: { fontFamily: fonts.extrabold, fontSize: 38, lineHeight: 40, letterSpacing: -1.6 },
-  title: { fontFamily: fonts.extrabold, fontSize: 32, lineHeight: 35, letterSpacing: -1.2 },
+  display: { fontFamily: fonts.extrabold, fontSize: 40, lineHeight: 44, letterSpacing: -0.8 },
+  hero: { fontFamily: fonts.extrabold, fontSize: 38, lineHeight: 42, letterSpacing: -0.8 },
+  title: { fontFamily: fonts.extrabold, fontSize: 32, lineHeight: 36, letterSpacing: -0.5 },
   title2: { fontFamily: fonts.extrabold, fontSize: 26, lineHeight: 29, letterSpacing: -0.8 },
   title3: { fontFamily: fonts.extrabold, fontSize: 22, lineHeight: 28, letterSpacing: -0.6 },
   heading: { fontFamily: fonts.extrabold, fontSize: 20, lineHeight: 26, letterSpacing: -0.5 },

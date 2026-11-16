@@ -1,17 +1,16 @@
 import { Redirect, router } from 'expo-router';
 import { useConvexAuth } from 'convex/react';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { Art } from '@/components/ui/art';
 import { Button } from '@/components/ui/button';
 import { Glass } from '@/components/ui/glass';
-import { Icon } from '@/components/ui/icon';
-import { PageDots } from '@/components/ui/page-dots';
+import { BrandHeader } from '@/components/brand-header';
 import { useScreenTop } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 const flakes = [
   { left: 40, top: 60, phase: 0, size: 4 },
@@ -25,6 +24,8 @@ const flakes = [
 export default function WelcomeScreen() {
   const { isAuthenticated } = useConvexAuth();
   const top = useScreenTop();
+  const insets = useSafeAreaInsets();
+  const bottom = Math.max(insets.bottom, space.gutter);
   const fall = useSharedValue(0);
 
   useEffect(() => {
@@ -35,48 +36,30 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.root}>
-      <Art name="welcome" style={StyleSheet.absoluteFill} />
+      <Image source={require('../../assets/images/everest.jpg')} resizeMode="cover" style={styles.background} />
       {flakes.map((flake, index) => (
         <Flake key={index} progress={fall} {...flake} />
       ))}
 
-      <View style={[styles.header, { top: top + 2 }]}>
-        <Glass radius={22} style={styles.brand}>
-          <Icon name="compass" size={22} />
-          <Text weight="bold" style={styles.brandText}>
-            Wayfarer
-          </Text>
-        </Glass>
-        <Glass radius={22} style={styles.weather}>
-          <Text variant="meta" weight="semibold">
-            −04°C · Zermatt
-          </Text>
-        </Glass>
+      <View style={[styles.safeArea, { paddingLeft: insets.left, paddingRight: insets.right }]}>
+        <View style={[styles.content, { paddingTop: top, paddingBottom: bottom }]}>
+          <BrandHeader />
+          <Glass radius={radius.hero} style={styles.card}>
+            <Text variant="display" accessibilityRole="header">
+              Rank the places you’ve been.
+            </Text>
+            <Button label="Get started" trailingIcon="arrowRight" onPress={() => router.push('/auth?mode=signup')} />
+            <Button
+              variant="link"
+              label="Sign in"
+              height={48}
+              fontSize={15}
+              onPress={() => router.push('/auth?mode=signin')}
+            />
+            {__DEV__ && <Button label="Dev mode — skip onboarding" variant="secondary" onPress={() => router.push('/dev')} />}
+          </Glass>
+        </View>
       </View>
-
-      <Glass radius={radius.hero} style={styles.card}>
-        <View style={styles.eyebrow}>
-          <View style={styles.rule} />
-          <Text variant="eyebrow" color="slate" style={styles.eyebrowText}>
-            TRAVEL, RANKED BY YOU
-          </Text>
-        </View>
-        <Text variant="display" accessibilityRole="header">
-          Every place you’ve been, in order.
-        </Text>
-        <Text color="slate">Collect cities, unlock their landmarks and see where your friends would go next.</Text>
-        <View style={styles.dots}>
-          <PageDots count={3} active={0} />
-        </View>
-        <Button label="Get started" trailingIcon="arrowRight" onPress={() => router.push('/auth?mode=signup')} />
-        <Button
-          variant="link"
-          label="I already have an account"
-          height={48}
-          fontSize={15}
-          onPress={() => router.push('/auth?mode=signin')}
-        />
-      </Glass>
     </View>
   );
 }
@@ -101,30 +84,23 @@ function Flake({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#9FB6CC', overflow: 'hidden' },
+  root: { flex: 1, backgroundColor: colors.canvas, overflow: 'hidden' },
+  background: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
   flake: { position: 'absolute', borderRadius: 2, backgroundColor: colors.white, opacity: 0.9 },
-  header: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
+  safeArea: { flex: 1 },
+  content: {
+    flex: 1,
+    width: '100%',
+    maxWidth: space.screenMaxWidth,
+    alignSelf: 'center',
+    paddingHorizontal: space.gutter,
     justifyContent: 'space-between',
+    gap: space.stack,
   },
-  brand: { height: 44, paddingLeft: 12, paddingRight: 16, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandText: { fontSize: 17, lineHeight: 22 },
-  weather: { height: 44, paddingHorizontal: 14, justifyContent: 'center' },
   card: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 28,
-    paddingTop: 28,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    gap: 16,
+    paddingTop: space.inset,
+    paddingHorizontal: space.inset,
+    paddingBottom: space.inset,
+    gap: space.stack,
   },
-  eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rule: { width: 28, height: 1.5, backgroundColor: colors.slate },
-  eyebrowText: { letterSpacing: 3 },
-  dots: { paddingVertical: 4 },
 });

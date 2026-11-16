@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-nat
 import { Glass } from '@/components/ui/glass';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export type ButtonProps = {
   label: string;
@@ -28,7 +28,7 @@ export function Button({
   disabled = false,
   style,
 }: ButtonProps) {
-  const tint = variant === 'primary' ? colors.white : colors.ink;
+  const tint = variant === 'primary' ? colors.accentForeground : variant === 'link' ? colors.accentText : colors.ink;
   const content = (
     <>
       {icon && <Icon name={icon} color={tint} />}
@@ -41,11 +41,11 @@ export function Button({
       {trailingIcon && <Icon name={trailingIcon} color={tint} size={fontSize + 2} />}
     </>
   );
-  const shape = [styles.base, { height, borderRadius: height / 2, opacity: disabled ? 0.5 : 1 }];
+  const shape = [styles.base, { height, borderRadius: radius.control, opacity: disabled ? 0.5 : 1 }];
 
   if (variant === 'glass') {
     return (
-      <Glass radius={height / 2} onPress={disabled ? undefined : onPress} accessibilityRole="button" accessibilityState={{ disabled }} style={[shape, style]}>
+      <Glass radius={radius.card} onPress={disabled ? undefined : onPress} accessibilityRole="button" accessibilityState={{ disabled }} style={[shape, style]}>
         {content}
       </Glass>
     );
@@ -73,14 +73,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 18,
+    gap: space.stack,
+    paddingHorizontal: space.inset,
   },
-  primary: { backgroundColor: colors.ink },
+  primary: { backgroundColor: colors.accent },
   secondary: {
-    backgroundColor: colors.tileStrong,
+    backgroundColor: colors.accentSoft,
     borderWidth: 1,
-    borderColor: colors.inkLine,
+    borderColor: colors.accent,
   },
   pressed: { opacity: 0.85 },
 });

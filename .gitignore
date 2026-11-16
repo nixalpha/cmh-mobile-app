@@ -45,3 +45,5 @@ example
 # catalog pipeline
 scripts/catalog/.cache/
 scripts/catalog/out/
+
+modules/cartoon-globe/.build/

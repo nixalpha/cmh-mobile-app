@@ -33,5 +33,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row' },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.inkFaint },
   wide: { width: 22 },
-  active: { backgroundColor: colors.ink },
+  active: { backgroundColor: colors.accent },
 });

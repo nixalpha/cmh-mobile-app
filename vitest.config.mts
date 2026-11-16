@@ -16,7 +16,7 @@ export default defineConfig({
   ],
   test: {
     environment: "edge-runtime",
-    include: ["convex/**/*.test.ts", "scripts/**/*.test.ts", "src/lib/**/*.test.ts"],
+    include: ["convex/**/*.test.ts", "scripts/**/*.test.ts", "src/lib/**/*.test.ts", "modules/cartoon-globe/vendor/**/*.test.ts"],
     env: {
       CONVEX_CLOUD_URL: "https://test.convex.cloud",
       CONVEX_SITE_URL: "https://test.convex.site",

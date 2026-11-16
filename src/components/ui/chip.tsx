@@ -14,7 +14,7 @@ import { Glass } from '@/components/ui/glass';
 import { Icon } from '@/components/ui/icon';
 import { selectionSpring } from '@/components/ui/sliding-indicator';
 import { Text } from '@/components/ui/text';
-import { colors } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
 export type ChipProps = {
   label: string;
@@ -28,8 +28,8 @@ export type ChipProps = {
 };
 
 const sizes = {
-  small: { height: 36, paddingHorizontal: 14, fontSize: 13, weight: 'bold' },
-  large: { height: 44, paddingHorizontal: 16, fontSize: 14, weight: 'semibold' },
+  small: { height: 36, paddingHorizontal: space.inset, fontSize: 13, weight: 'bold' },
+  large: { height: 44, paddingHorizontal: space.inset, fontSize: 14, weight: 'semibold' },
 } as const;
 
 const GAP = 8;
@@ -49,7 +49,6 @@ export function Chip({
   style,
 }: ChipProps) {
   const metrics = sizes[size];
-  const radius = metrics.height / 2;
   const progress = useSharedValue(selected ? 1 : 0);
   const press = useSharedValue(1);
 
@@ -60,7 +59,7 @@ export function Chip({
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: press.value }] }));
   const fillStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
   const labelStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(progress.value, [0, 1], [colors.ink, colors.white]),
+    color: interpolateColor(progress.value, [0, 1], [colors.ink, colors.accentForeground]),
   }));
   // The check slot grows from zero width so the chip (and its neighbours) reflow smoothly.
   const checkStyle = useAnimatedStyle(() => ({
@@ -72,16 +71,16 @@ export function Chip({
 
   const shape = [
     styles.base,
-    { height: metrics.height, borderRadius: radius, paddingHorizontal: metrics.paddingHorizontal },
+    { height: metrics.height, borderRadius: radius.control, paddingHorizontal: metrics.paddingHorizontal },
     leading !== undefined && styles.withLeading,
   ];
   const content = (
     <>
-      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.fill, { borderRadius: radius }, fillStyle]} />
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.fill, { borderRadius: radius.control }, fillStyle]} />
       {leading}
       {check && (
         <Animated.View style={[styles.check, checkStyle]}>
-          <Icon name="check" size={CHECK_SIZE} color={colors.white} strokeWidth={2.5} />
+          <Icon name="check" size={CHECK_SIZE} color={colors.accentForeground} strokeWidth={2.5} />
         </Animated.View>
       )}
       <AnimatedText
@@ -101,7 +100,7 @@ export function Chip({
       accessibilityState={{ selected: !!selected }}
       style={[pressStyle, style]}>
       {surface === 'glass' ? (
-        <Glass flat radius={radius} style={shape}>
+        <Glass flat radius={radius.control} style={shape}>
           {content}
         </Glass>
       ) : (
@@ -113,8 +112,8 @@ export function Chip({
 
 const styles = StyleSheet.create({
   base: { flexDirection: 'row', alignItems: 'center', gap: GAP },
-  withLeading: { paddingLeft: 6, paddingRight: 12 },
-  fill: { backgroundColor: colors.ink },
+  withLeading: { paddingLeft: space.inline, paddingRight: space.inset },
+  fill: { backgroundColor: colors.accent },
   tile: { backgroundColor: colors.tileStrong },
   check: { height: CHECK_SIZE, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 });

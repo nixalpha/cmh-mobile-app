@@ -1,11 +1,11 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 
-export function StatTile({ value, label, onPress }: { value: string; label: string; onPress?: () => void }) {
+export function StatTile({ value, label, onPress, style }: { value: string; label: string; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={styles.tile}>
+    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined} style={[styles.tile, style]}>
       <Text variant="title3" style={styles.value}>
         {value}
       </Text>
@@ -17,6 +17,6 @@ export function StatTile({ value, label, onPress }: { value: string; label: stri
 }
 
 const styles = StyleSheet.create({
-  tile: { flex: 1, borderRadius: radius.field, backgroundColor: colors.tile, padding: 12, gap: 2 },
+  tile: { flex: 1, borderRadius: radius.field, backgroundColor: colors.tile, padding: space.inset, gap: space.fine },
   value: { letterSpacing: -0.5 },
 });

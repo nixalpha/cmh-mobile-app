@@ -11,7 +11,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Select } from '@/components/ui/select';
 import { Text } from '@/components/ui/text';
-import { colors, fonts } from '@/constants/theme';
+import { colors, fonts, radius, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 import { answer, isPlaced, maxPicks, opponentIndex, startRange, type Outcome, type Range } from '../../../convex/lib/ranking';
 
@@ -20,7 +20,7 @@ type Session = { size: number; version: number; range: Range; answers: { opponen
 
 export default function RankScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  if (!id || !/^[a-z0-9]{32}$/.test(id)) return <Screen><Notice>This place could not be found.</Notice><Button label="Find a place" onPress={() => router.replace('/discover')} /></Screen>;
+  if (!id || !/^[a-z0-9]{32}$/.test(id)) return <Screen><Notice>Place not found.</Notice><Button label="Find a place" onPress={() => router.replace('/discover')} /></Screen>;
   return <RankDestination key={id} id={id as Id<'destinations'>} />;
 }
 
@@ -74,25 +74,24 @@ function RankForm({ id, name }: { id: Id<'destinations'>; name: string }) {
   };
 
   return (
-    <Screen backdrop="rank" scroll style={styles.content}>
-      <View style={styles.header}>
-        <IconButton icon="close" label="Close ranking" onPress={() => router.replace(`/place/${id}`)} />
-        <View style={styles.title}><Text variant="title2">Rank {name}</Text><Notice>Your places, in your order</Notice></View>
-      </View>
+    <Screen backdrop="rank" scroll style={styles.content} headerActions={
+      <IconButton icon="close" label="Close ranking" onPress={() => router.replace(`/place/${id}`)} />
+    }>
+      <Text variant="title2" accessibilityRole="header">Rank {name}</Text>
       {result ? (
         <Glass style={styles.panel}>
           <Text variant="display">#{result.rank}</Text>
-          <Text variant="title2">{name} is on your list.</Text>
+          <Text variant="title2">{name}</Text>
           <Text>#{result.rank} of {result.size} · {result.score.toFixed(1)} / 10</Text>
-          <Notice>{share ? 'Shared with friends. Your feed will update shortly.' : 'Saved to your rankings without a feed post.'}</Notice>
+          <Notice>{share ? 'Shared with friends.' : 'Saved without a post.'}</Notice>
           <Button label="Done" onPress={() => router.replace(`/place/${id}`)} />
         </Glass>
       ) : detail === undefined ? <Notice>Loading your ranking…</Notice> : detail.viewer.rank !== null ? (
-        <Glass style={styles.panel}><Text variant="title2">Already ranked #{detail.viewer.rank}</Text><Notice>Re-ranking is not part of this demo yet.</Notice><Button label="Back to place" onPress={() => router.replace(`/place/${id}`)} /></Glass>
+        <Glass style={styles.panel}><Text variant="title2">Already ranked #{detail.viewer.rank}</Text><Notice>Re-ranking isn’t available yet.</Notice><Button label="Back to place" onPress={() => router.replace(`/place/${id}`)} /></Glass>
       ) : !session ? (
         <>
-          <Text variant="title">When did you visit?</Text>
-          <Notice>{detail.viewer.visit ? 'This place is already in your visits. Its recorded date will stay unchanged.' : 'Record a past visit, or leave the date unknown. Visits are self-reported.'}</Notice>
+          <Text variant="title">{detail.viewer.visit ? 'Rank your visit' : 'When did you visit?'}</Text>
+          <Notice>{detail.viewer.visit ? 'Your visit date won’t change.' : 'Leave the date blank if unknown. Visits are self-reported.'}</Notice>
           {!detail.viewer.visit && <Glass style={styles.panel}>
             <Text variant="label">Year (optional)</Text>
             <TextInput accessibilityLabel="Visit year" placeholder="Unknown" value={year} onChangeText={setYear} keyboardType="number-pad" maxLength={4} style={styles.input} />
@@ -101,13 +100,13 @@ function RankForm({ id, name }: { id: Id<'destinations'>; name: string }) {
           <AsyncButton label="Start comparing" onPress={start} />
         </>
       ) : changed ? (
-        <Glass style={styles.panel}><Text variant="title2">Your list changed</Text><Notice>Nothing was saved. Restart the comparisons against your latest list.</Notice><AsyncButton label="Restart comparisons" onPress={start} /></Glass>
+        <Glass style={styles.panel}><Text variant="title2">Your list changed</Text><Notice>Nothing was saved. Restart with your updated list.</Notice><AsyncButton label="Restart comparisons" onPress={start} /></Glass>
       ) : isPlaced(session.range) ? (
         <Glass style={styles.panel}>
-          <Text variant="title">Your {session.size === 0 ? 'first' : 'next'} favorite.</Text>
-          <Notice>{session.size === 0 ? 'No comparisons needed for your first ranked place.' : 'Comparisons complete. Save to make the ranking official.'}</Notice>
-          <View style={styles.header}><Text style={styles.title}>Post to friends</Text><Switch accessibilityLabel="Post ranking to friends" value={share} onValueChange={setShare} /></View>
-          {share && <TextInput accessibilityLabel="Ranking note" placeholder="What made it special? (optional)" multiline maxLength={280} value={note} onChangeText={setNote} style={styles.input} />}
+          <Text variant="title">Ready to save</Text>
+          {session.size === 0 && <Notice>Your first place needs no comparisons.</Notice>}
+          <View style={styles.header}><Text style={styles.title}>Post to friends</Text><Switch trackColor={{ false: colors.inkFaint, true: colors.accent }} thumbColor={colors.white} accessibilityLabel="Post ranking to friends" value={share} onValueChange={setShare} /></View>
+          {share && <TextInput accessibilityLabel="Ranking note" placeholder="Add a note (optional)" multiline maxLength={280} value={note} onChangeText={setNote} style={styles.input} />}
           <AsyncButton label="Save ranking" onPress={save} />
         </Glass>
       ) : (
@@ -119,7 +118,7 @@ function RankForm({ id, name }: { id: Id<'destinations'>; name: string }) {
             <Text variant="meta" color="muted" style={styles.or}>OR</Text>
             <Button variant="secondary" label={opponent?.destination?.name ?? 'Loading opponent…'} disabled={!opponent} onPress={() => choose('existing')} />
             <Button variant="link" label="Too close to call" disabled={!opponent} onPress={() => choose('tie')} />
-            <Notice>Too close places {name} directly below the other place.</Notice>
+            <Notice>“Too close” ranks {name} just below the other place.</Notice>
             {opponents && !opponent && <><Notice>Your list may have changed.</Notice><AsyncButton label="Restart comparisons" onPress={start} /></>}
           </Glass>
         </>
@@ -129,7 +128,7 @@ function RankForm({ id, name }: { id: Id<'destinations'>; name: string }) {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: 22 }, header: { flexDirection: 'row', alignItems: 'center', gap: 12 }, title: { flex: 1 },
-  panel: { padding: 22, gap: 18 }, input: { padding: 16, borderRadius: 14, backgroundColor: colors.tileStrong, fontFamily: fonts.regular, fontSize: 16, color: colors.ink },
+  content: { gap: space.stack }, header: { flexDirection: 'row', alignItems: 'center', gap: space.stack }, title: { flex: 1 },
+  panel: { padding: space.inset, gap: space.stack }, input: { padding: space.inset, borderRadius: radius.card, backgroundColor: colors.tileStrong, fontFamily: fonts.regular, fontSize: 16, color: colors.ink },
   or: { textAlign: 'center' },
 });

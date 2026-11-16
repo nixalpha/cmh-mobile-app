@@ -8,7 +8,7 @@ import { commonsFileName, plainCredit, seeListings, type ImageInfo, type ImageKi
 
 export const CACHE_DIR = join(import.meta.dirname, ".cache");
 export const OUT_DIR = join(import.meta.dirname, "out");
-const USER_AGENT = "wayfarer-catalog/0.1 (https://github.com/nixalpha/cmh-mobile-app)";
+const USER_AGENT = "travi-catalog/0.1 (https://github.com/nixalpha/cmh-mobile-app)";
 const SPARQL_ENDPOINT = process.env.SPARQL_ENDPOINT ?? "https://qlever.dev/api/wikidata";
 
 const PREFIXES = `PREFIX wd: <http://www.wikidata.org/entity/>
