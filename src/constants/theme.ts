@@ -68,7 +68,7 @@ export const space = {
   inset: 12,
   inline: 4,
   fine: 2,
-  tabBarHeight: 68,
+  tabBarHeight: 60,
   tabBarBottom: 12,
   scrollBottom: 120,
 } as const;

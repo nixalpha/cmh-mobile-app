@@ -19,7 +19,7 @@ import { disableAutoCollection } from '@/lib/auto-collection';
 import { Button } from '@/components/ui/button';
 import { FriendManager } from '@/components/friend-manager';
 import { LivePosts, personInitials, personName } from '@/components/live-post';
-import { AsyncButton, Notice } from '@/components/live-ui';
+import { AsyncButton, AsyncIconButton, Notice } from '@/components/live-ui';
 import { SectionHeader } from '@/components/section-header';
 import { StatTile } from '@/components/stat-tile';
 import { Avatar } from '@/components/ui/avatar';
@@ -30,7 +30,7 @@ import { Screen } from '@/components/ui/screen';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { selectionSpring } from '@/components/ui/sliding-indicator';
 import { Text } from '@/components/ui/text';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 
 const segments = [
@@ -48,10 +48,12 @@ export default function ProfileScreen() {
   const [tab, setTab] = useState<(typeof segments)[number]['value']>('mine');
   const [picked, setPicked] = useState<Id<'users'> | null>(null);
   const [manage, setManage] = useState(false);
+  const [signOutError, setSignOutError] = useState('');
   const friend = friends.results.find((person) => person._id === picked);
 
   const header = (
     <View style={styles.stack}>
+      {!!signOutError && <Notice>{signOutError}</Notice>}
       {me === undefined ? <Notice>Loading your profile…</Notice> : me === null ? <Notice>Sign in to see your profile.</Notice> : (
         <Glass radius={radius.hero} style={styles.card}>
           <View style={styles.identity}>
@@ -88,7 +90,7 @@ export default function ProfileScreen() {
         <SectionHeader title="Friends" count={me?.friendCount} trailing={manage ? 'Close' : 'Manage'} onTrailingPress={() => setManage(!manage)} />
         {friends.status === 'LoadingFirstPage' && <Notice>Loading friends…</Notice>}
         {friends.status !== 'LoadingFirstPage' && friends.results.length === 0 && <Notice>No friends yet.</Notice>}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendRow}>
+        {friends.results.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendRow}>
           {friends.results.map((person) => (
             <Pressable
               key={person._id}
@@ -103,7 +105,7 @@ export default function ProfileScreen() {
               <Text variant="caption" weight="semibold" numberOfLines={1}>{personName(person)}</Text>
             </Pressable>
           ))}
-        </ScrollView>
+        </ScrollView>}
         {friends.status === 'CanLoadMore' && <AsyncButton label="More friends" variant="link" onPress={async () => friends.loadMore(20)} />}
         {friends.status === 'LoadingMore' && <Notice>Loading more friends…</Notice>}
       </View>
@@ -118,7 +120,8 @@ export default function ProfileScreen() {
     <Screen
       backdrop="profile"
       headerActions={(
-        <AsyncButton label="Sign out" variant="secondary" height={44} onPress={async () => {
+        <AsyncIconButton icon="logOut" label="Sign out" onError={setSignOutError} onPress={async () => {
+          setSignOutError('');
           await disableAutoCollection(client);
           await setBackground(false);
           await disablePush();
@@ -145,14 +148,14 @@ function FriendRing({ on, children }: { on: boolean; children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 16 },
-  card: { padding: 20, gap: 18 },
-  identity: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  identityCopy: { flex: 1, gap: 4 },
-  stats: { flexDirection: 'row', gap: 8 },
-  rankings: { gap: 8 },
-  topRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  friendRow: { gap: 14, padding: 2 },
-  friend: { width: 72, alignItems: 'center', gap: 6 },
+  stack: { gap: space.stack },
+  card: { padding: space.inset, gap: space.inset },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: space.inset },
+  identityCopy: { flex: 1, gap: space.inline },
+  stats: { flexDirection: 'row', gap: space.stack },
+  rankings: { gap: space.stack },
+  topRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.stack },
+  friendRow: { gap: space.stack, padding: space.fine },
+  friend: { width: 72, alignItems: 'center', gap: space.inline },
   ring: { padding: 2, borderRadius: 30, borderWidth: 2, borderColor: 'transparent' },
 });

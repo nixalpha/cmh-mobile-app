@@ -5,6 +5,7 @@ import { AppState, Linking, StyleSheet } from 'react-native';
 import { AsyncButton, Notice } from '@/components/live-ui';
 import { Glass } from '@/components/ui/glass';
 import { Text } from '@/components/ui/text';
+import { space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 import { autoCollectionStatus, autoCollectionSupported, disableAutoCollection, enableAutoCollection,
   onAutoPhotoChange, syncAutoCollection, type AutoCollectionStatus } from '@/lib/auto-collection';
@@ -62,4 +63,4 @@ export function AutoCollectionSettings() {
   </Glass>;
 }
 
-const styles = StyleSheet.create({ card: { padding: 20, gap: 12 } });
+const styles = StyleSheet.create({ card: { padding: space.inset, gap: space.stack } });

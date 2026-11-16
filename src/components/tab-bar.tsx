@@ -92,8 +92,8 @@ function TabButton({
         <IndicatorItem
           indicator={indicator}
           index={index}
-          inactive={<Icon name={tab.icon} size={22} color={colors.slate} />}
-          active={<Icon name={tab.icon} size={22} color={colors.accentForeground} />}
+          inactive={<Icon name={tab.icon} size={20} color={colors.slate} />}
+          active={<Icon name={tab.icon} size={20} color={colors.accentForeground} />}
         />
       </Animated.View>
     </Pressable>
@@ -113,6 +113,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: space.stack,
   },
-  tab: { width: 52, height: 52, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center' },
+  tab: { width: 44, height: 44, borderRadius: radius.card, alignItems: 'center', justifyContent: 'center' },
   pill: { borderRadius: radius.card, backgroundColor: colors.accent },
 });
