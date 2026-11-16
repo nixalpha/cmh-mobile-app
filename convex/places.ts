@@ -12,6 +12,7 @@ import { MIN_LIST_FOR_AVERAGES, scoreForRank } from "./lib/ranking";
 import { scheduleRecompute } from "./lib/recommendations";
 import { areFriends, MAX_FRIENDS } from "./lib/social";
 import { createUnlock, deleteUnlock, deleteVisit, ensureVisit, getVisit, postUnlock, unlockPhotos } from "./lib/visits";
+import { detectCity } from "./lib/friendLocations";
 import { verification } from "./schema";
 import { toSummary, userSummaryValidator } from "./users";
 
@@ -42,6 +43,29 @@ export const addVisit = mutation({
     await ensureVisit(ctx, user._id, destination, { year: args.year, month: args.month });
     await scheduleRecompute(ctx, user._id);
     return null;
+  },
+});
+
+// The catalog city a photo was taken in, for building a starter list from the
+// camera roll. `city` and `countryCode` come from on-device reverse geocoding.
+export const cityAt = query({
+  args: {
+    lat: v.number(),
+    lng: v.number(),
+    city: v.optional(v.string()),
+    countryCode: v.optional(v.string()),
+  },
+  returns: v.union(
+    v.object({ destination: destinationValidator, visited: v.boolean() }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    if (Math.abs(args.lat) > 90 || Math.abs(args.lng) > 180) fail("INVALID", "That location is out of range.");
+    const city = await detectCity(ctx, args);
+    if (city === null) return null;
+    const visit = await getVisit(ctx, user._id, city._id);
+    return { destination: toDestination(city), visited: visit !== null };
   },
 });
 
