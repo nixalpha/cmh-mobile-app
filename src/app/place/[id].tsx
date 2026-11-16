@@ -2,11 +2,13 @@ import { useConvex, useMutation, useQuery } from 'convex/react';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { LandmarkDetails } from '@/components/landmark-details';
 import { AsyncButton, AsyncIconButton, Notice, PhotoCredit, PlaceArt } from '@/components/live-ui';
 import { Button } from '@/components/ui/button';
 import { Glass } from '@/components/ui/glass';
+import { Icon } from '@/components/ui/icon';
 import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
@@ -27,6 +29,13 @@ export default function PlaceScreen() {
   const addVisit = useMutation(api.places.addVisit);
   const lock = useMutation(api.places.lockLandmark);
   const [saveError, setSaveError] = useState('');
+  // Landmark cards open on tap to show a Wikipedia blurb. The one you arrived from on the map starts open.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set(focusedLandmark ? [focusedLandmark] : []));
+  const toggleLandmark = (landmarkId: string) => setExpanded((open) => {
+    const next = new Set(open);
+    if (!next.delete(landmarkId)) next.add(landmarkId);
+    return next;
+  });
   const importNote = usePhotoImport(detail, landmarks);
   // Arriving from a landmark pin on the map: bring that landmark's card into view once it is laid out.
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -80,6 +89,7 @@ export default function PlaceScreen() {
             {!detail.viewer.visit && <Notice>Mark this place as visited to add landmarks.</Notice>}
             {landmarks === undefined ? <SkeletonRows count={3} round={false} label="Loading landmarks…" /> : landmarks.length === 0 ? <Notice>No landmarks yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, photoCount, coverUrl }) => {
               const openVisit = () => router.push({ pathname: '/landmark-visit/[id]', params: { id: landmark._id } });
+              const open = expanded.has(landmark._id);
               return (
                 <Glass
                   key={landmark._id}
@@ -88,7 +98,12 @@ export default function PlaceScreen() {
                     borderColor: colors.accentText,
                     onLayout: (event) => revealLandmark({ card: event.nativeEvent.layout.y }),
                   })}>
-                  <View style={styles.landmarkRow}>
+                  <Pressable
+                    onPress={() => toggleLandmark(landmark._id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: open }}
+                    accessibilityHint={open ? 'Hides the description' : 'Shows a short description and a Wikipedia link'}
+                    style={({ pressed }) => [styles.landmarkRow, pressed && styles.pressed]}>
                     {coverUrl && (
                       <Image source={{ uri: coverUrl }} style={styles.cover} contentFit="cover" recyclingKey={landmark._id} accessibilityLabel={`Your photo of ${landmark.name}`} />
                     )}
@@ -101,7 +116,9 @@ export default function PlaceScreen() {
                         </Text>
                       )}
                     </View>
-                  </View>
+                    <Icon name={open ? 'chevronUp' : 'chevronDown'} size={18} color={colors.muted} />
+                  </Pressable>
+                  {open && <LandmarkDetails landmarkId={landmark._id} name={landmark.name} />}
                   {detail.viewer.visit && (unlocked ? (
                     <>
                       <Button label="Edit visit" variant="secondary" onPress={openVisit} />
@@ -176,5 +193,6 @@ const styles = StyleSheet.create({
   landmarks: { gap: space.stack },
   landmarkRow: { flexDirection: 'row', gap: space.inset, alignItems: 'center' },
   landmarkCopy: { flex: 1, gap: space.inline },
+  pressed: { opacity: 0.6 },
   cover: { width: 64, height: 64, borderRadius: radius.card },
 });

@@ -11,6 +11,7 @@ const icons = {
   bookmarkFilled: '<path d="M6 4h12v17l-6-4-6 4z" fill="COLOR"/>',
   check: '<path d="M5 12l5 5 9-10"/>',
   chevronDown: '<path d="M6 9l6 6 6-6"/>',
+  chevronUp: '<path d="M6 15l6-6 6 6"/>',
   chevronRight: '<path d="M9 6l6 6-6 6"/>',
   cities: '<path d="M4 21V9l6-4v16M10 21h10V11l-6-2M7 10v.01M7 14v.01M14 13h2M14 17h2"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
