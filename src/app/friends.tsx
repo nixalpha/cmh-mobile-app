@@ -125,8 +125,8 @@ export default function FriendsScreen() {
           ListEmptyComponent={<View style={styles.empty}>
             <View style={styles.emptyIcon}><Icon name={search ? 'search' : 'users'} size={24} color={colors.accentText} /></View>
             <Text variant="cardTitle">{loading ? 'Loading your people…' : search ? 'No friends found' : 'Good company, anywhere'}</Text>
-            {!loading && <Text variant="caption" color="muted" style={styles.emptyCopy}>{search ? 'Try another name or handle.' : 'Add your friends to see where your worlds meet.'}</Text>}
-            {!loading && !search && <Button label="Add friends" icon="userPlus" height={40} variant="secondary" onPress={openSettings} />}
+            {!loading && !!search && <Text variant="caption" color="muted" style={styles.emptyCopy}>Try another name or handle.</Text>}
+            {!loading && !search && <Button label="Add friends" icon="userPlus" height={32} variant="secondary" onPress={openSettings} />}
           </View>}
           ListFooterComponent={loadingMore ? <Notice>Loading the rest of your friends…</Notice> : undefined}
         />
