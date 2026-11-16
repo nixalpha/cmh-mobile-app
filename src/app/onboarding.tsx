@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AddingPlaces } from '@/components/adding-places';
 import { AsyncButton, errorMessage, Notice } from '@/components/live-ui';
 import { PhotoScan, type PhotoScanStep } from '@/components/photo-scan';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,8 @@ const MAX_PLACES = 30;
 const BUTTON_HEIGHT = 44;
 // Thumbnails kept for the scan animation. Older ones drop off once this is reached.
 const PREVIEW_POOL = 240;
+// How long the finished "Your places are in" screen stays up before leaving.
+const ADDED_HOLD_MS = 700;
 
 type Place = { id: Id<'destinations'>; name: string; countryCode: string; takenAt?: number };
 export default function OnboardingScreen() {
@@ -101,7 +104,9 @@ function PickPlaces({ found, selected, setSelected, notice, adding }: {
   const done = () => (adding ? router.back() : router.replace('/permissions'));
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
-  const [saving, setSaving] = useState(false);
+  // Places being saved and how many are done. Null while picking.
+  const [progress, setProgress] = useState<{ places: Place[]; saved: number } | null>(null);
+  const [saveError, setSaveError] = useState('');
   const savingRef = useRef(false);
   const addVisit = useMutation(api.places.addVisit);
   const popular = useQuery(api.destinations.popular, search ? 'skip' : { limit: 20 });
@@ -134,21 +139,39 @@ function PickPlaces({ found, selected, setSelected, notice, adding }: {
 
   const save = async () => {
     if (savingRef.current) return;
+    if (selected.length === 0) { done(); return; }
     savingRef.current = true;
-    setSaving(true);
+    const places = selected;
+    setSaveError('');
+    setProgress({ places, saved: 0 });
     try {
-      for (const place of selected) {
+      for (const [index, place] of places.entries()) {
         const when = place.takenAt ? new Date(place.takenAt) : null;
         await addVisit(when
           ? { destinationId: place.id, year: when.getFullYear(), month: when.getMonth() + 1 }
           : { destinationId: place.id });
+        setProgress({ places, saved: index + 1 });
       }
+      await new Promise((resolve) => setTimeout(resolve, ADDED_HOLD_MS));
       done();
+    } catch (cause) {
+      // Back to the picker so the places can be retried. Visits already saved stay saved.
+      setProgress(null);
+      setSaveError(errorMessage(cause));
     } finally {
       savingRef.current = false;
-      setSaving(false);
     }
   };
+
+  if (progress) {
+    return (
+      <Screen backdrop="onboarding" style={styles.fill}>
+        <View style={styles.center}>
+          <AddingPlaces places={progress.places} saved={progress.saved} />
+        </View>
+      </Screen>
+    );
+  }
 
   const loading = results === undefined || query.trim() !== search;
   return (
@@ -179,7 +202,8 @@ function PickPlaces({ found, selected, setSelected, notice, adding }: {
           height={BUTTON_HEIGHT}
           onPress={save}
         />
-        {!saving && <Button label={adding ? 'Cancel' : 'Skip'} variant="link" height={BUTTON_HEIGHT} onPress={done} />}
+        {!!saveError && <Notice>{saveError}</Notice>}
+        <Button label={adding ? 'Cancel' : 'Skip'} variant="link" height={BUTTON_HEIGHT} onPress={done} />
       </View>
     </Screen>
   );
