@@ -11,7 +11,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { destinationValidator, landmarkValidator, toDestination, toLandmark } from "./destinations";
-import { notify } from "./lib/activities";
+import { MAX_POST_PHOTOS, notify } from "./lib/activities";
 import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { areFriends } from "./lib/social";
@@ -27,7 +27,7 @@ const visibility = v.union(v.literal("friends"), v.literal("private"));
 const postValidator = v.object({
   _id: v.id("activities"),
   postedAt: v.number(),
-  type: v.union(v.literal("ranked"), v.literal("unlocked"), v.literal("saved")),
+  type: v.union(v.literal("ranked"), v.literal("unlocked"), v.literal("saved"), v.literal("posted")),
   actor: userSummaryValidator,
   destination: destinationValidator,
   landmark: v.union(landmarkValidator, v.null()),
@@ -91,6 +91,24 @@ async function visitDetails(ctx: QueryCtx, actorId: Id<"users">, landmarkId: Id<
   };
 }
 
+async function postDetails(ctx: QueryCtx, activity: Extract<Doc<"activities">, { type: "posted" }>) {
+  const photos = await ctx.db
+    .query("postPhotos")
+    .withIndex("by_activityId_and_order", (q) => q.eq("activityId", activity._id))
+    .take(MAX_POST_PHOTOS);
+  const urls = await Promise.all(photos.slice(0, FEED_PHOTOS).map((photo) => ctx.storage.getUrl(photo.storageId)));
+  return {
+    visitedOn: activity.takenOn ?? null,
+    note: activity.note ?? null,
+    companions: [],
+    photos: photos.slice(0, FEED_PHOTOS).flatMap((photo, i) => {
+      const url = urls[i];
+      return url === null ? [] : [{ url, width: photo.width, height: photo.height }];
+    }),
+    photoCount: photos.length,
+  };
+}
+
 async function toPost(ctx: QueryCtx, viewerId: Id<"users">, activity: Doc<"activities">) {
   const [actor, destination, like] = await Promise.all([
     ctx.db.get("users", activity.actorId),
@@ -132,7 +150,12 @@ async function toPost(ctx: QueryCtx, viewerId: Id<"users">, activity: Doc<"activ
       activity.type === "unlocked"
         ? { unlockedCount: activity.unlockedCount, landmarkTotal: activity.landmarkTotal }
         : null,
-    visit: activity.type === "unlocked" ? await visitDetails(ctx, activity.actorId, activity.landmarkId) : null,
+    visit:
+      activity.type === "unlocked"
+        ? await visitDetails(ctx, activity.actorId, activity.landmarkId)
+        : activity.type === "posted"
+          ? await postDetails(ctx, activity)
+          : null,
     likeCount: activity.likeCount,
     commentCount: activity.commentCount,
     likedByViewer: like !== null,

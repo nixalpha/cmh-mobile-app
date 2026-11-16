@@ -1,4 +1,4 @@
-import { v, type Infer } from "convex/values";
+import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -8,6 +8,7 @@ import { notify } from "./lib/activities";
 import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { distanceKm, toPoint } from "./lib/geo";
+import { checkUpload, photoInUse } from "./lib/photos";
 import { areFriends } from "./lib/social";
 import {
   checkDay,
@@ -24,7 +25,6 @@ import { toSummary, userSummaryValidator } from "./users";
 
 export const MAX_NOTE = 1000;
 export const MAX_COMPANIONS = 20;
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 /** A photo taken this close to the landmark counts as photo verification. */
 export const VERIFY_RADIUS_KM = 1;
 /** Uploads not attached to a visit within this window are deleted by the cleanup cron. */
@@ -69,20 +69,6 @@ const newPhotoValidator = v.object({
   lng: v.optional(v.number()),
 });
 
-async function checkNewPhoto(ctx: MutationCtx, photo: Infer<typeof newPhotoValidator>) {
-  const file = await ctx.db.system.get("_storage", photo.storageId);
-  if (file === null) fail("NOT_FOUND", "That photo upload has expired. Try adding it again.");
-  if (!file.contentType?.startsWith("image/")) fail("INVALID", "Only images can be attached.");
-  if (file.size > MAX_PHOTO_BYTES) fail("INVALID", "That photo is too large.");
-  const used = await ctx.db
-    .query("landmarkPhotos")
-    .withIndex("by_storageId", (q) => q.eq("storageId", photo.storageId))
-    .unique();
-  if (used !== null) fail("CONFLICT", "That photo is already attached.");
-  const valid = (n: number) => Number.isFinite(n) && n > 0;
-  if (!valid(photo.width) || !valid(photo.height)) fail("INVALID", "That photo's size isn't valid.");
-}
-
 export const save = mutation({
   args: {
     landmarkId: v.id("landmarks"),
@@ -126,7 +112,7 @@ export const save = mutation({
     if (new Set(args.newPhotos.map((photo) => photo.storageId)).size !== args.newPhotos.length) {
       fail("INVALID", "The same photo was added twice.");
     }
-    for (const photo of args.newPhotos) await checkNewPhoto(ctx, photo);
+    for (const photo of args.newPhotos) await checkUpload(ctx, photo);
 
     const created = existing === null ? await createUnlock(ctx, visit, landmark) : null;
     const unlockId = existing?._id ?? created!.unlockId;
@@ -256,9 +242,9 @@ export const get = query({
 });
 
 /**
- * Deletes uploads that were never attached to a landmark visit (for example, the sheet was
- * closed after picking photos). Landmark photos are currently the only use of file storage;
- * anything else that stores files must be referenced here before this runs against it.
+ * Deletes uploads that were never attached to a landmark visit or a post (for example, the
+ * sheet was closed after picking photos). Anything else that stores files must be checked in
+ * `photoInUse` before this runs against it.
  */
 export const cleanOrphanUploads = internalMutation({
   args: { cursor: v.union(v.string(), v.null()) },
@@ -274,11 +260,7 @@ export const cleanOrphanUploads = internalMutation({
         reachedRecent = true;
         break;
       }
-      const photo = await ctx.db
-        .query("landmarkPhotos")
-        .withIndex("by_storageId", (q) => q.eq("storageId", file._id))
-        .unique();
-      if (photo === null) await ctx.storage.delete(file._id);
+      if (!(await photoInUse(ctx, file._id))) await ctx.storage.delete(file._id);
     }
     if (!result.isDone && !reachedRecent) {
       await ctx.scheduler.runAfter(0, internal.landmarkVisits.cleanOrphanUploads, { cursor: result.continueCursor });

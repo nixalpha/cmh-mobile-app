@@ -122,6 +122,8 @@ export default defineSchema({
     month: v.optional(v.number()),
     source: verification,
     unlockCount: v.number(),
+    // Set once the device has imported the camera roll's photos from this place.
+    photosImportedAt: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_and_destinationId", ["userId", "destinationId"])
@@ -151,6 +153,19 @@ export default defineSchema({
     order: v.number(),
   })
     .index("by_unlockId_and_order", ["unlockId", "order"])
+    .index("by_storageId", ["storageId"]),
+
+  postPhotos: defineTable({
+    userId: v.id("users"),
+    activityId: v.id("activities"),
+    destinationId: v.id("destinations"),
+    storageId: v.id("_storage"),
+    width: v.number(),
+    height: v.number(),
+    takenAt: v.optional(v.number()),
+    order: v.number(),
+  })
+    .index("by_activityId_and_order", ["activityId", "order"])
     .index("by_storageId", ["storageId"]),
 
   saves: defineTable({
@@ -204,6 +219,13 @@ export default defineSchema({
         landmarkTotal: v.number(),
       }),
       v.object({ ...activityBase, type: v.literal("saved") }),
+      // Photos from a visited city. `takenOn` is the earliest photo's local day, YYYY-MM-DD.
+      v.object({
+        ...activityBase,
+        type: v.literal("posted"),
+        note: v.optional(v.string()),
+        takenOn: v.optional(v.string()),
+      }),
     ),
   )
     .index("by_actorId", ["actorId"])
