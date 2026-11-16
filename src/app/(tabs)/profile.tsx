@@ -1,8 +1,8 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useConvex, usePaginatedQuery, useQuery } from 'convex/react';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { useFriendLocation } from '@/components/friend-location-provider';
 import { disableAutoCollection } from '@/lib/auto-collection';
@@ -21,16 +21,49 @@ import { Loading, SkeletonRows } from '@/components/ui/loading';
 import { colors, radius, space } from '@/constants/theme';
 import { api } from '@/lib/backend';
 
+const REFRESH_HOLD_MS = 650;
+
 export default function ProfileScreen() {
   const client = useConvex();
   const { signOut } = useAuthActions();
   const { disablePush, setBackground } = useFriendLocation();
+  const [signOutError, setSignOutError] = useState('');
+  const [epoch, setEpoch] = useState(0);
+
+  const onRefresh = useCallback(async () => {
+    setEpoch((value) => value + 1);
+    await new Promise<void>((resolve) => setTimeout(resolve, REFRESH_HOLD_MS));
+  }, []);
+
+  return (
+    <Screen
+      backdrop="profile"
+      headerActions={(<>
+        <IconButton icon="plus" label="New post" onPress={() => router.push('/post/new')} />
+        <AsyncIconButton icon="logOut" label="Sign out" onError={setSignOutError} onPress={async () => {
+          setSignOutError('');
+          await disableAutoCollection(client);
+          await setBackground(false);
+          await disablePush();
+          await signOut();
+        }} />
+      </>)}>
+      <LivePosts
+        mode="mine"
+        header={<ProfileHeader key={epoch} signOutError={signOutError} />}
+        footer={<ProfileFriends key={epoch} />}
+        emptyMessage="Tap + to post photos from a place you’ve been."
+        onRefresh={onRefresh}
+      />
+    </Screen>
+  );
+}
+
+function ProfileHeader({ signOutError }: { signOutError: string }) {
   const me = useQuery(api.users.me, {});
   const top = useQuery(api.rankings.list, { list: 'destinations', paginationOpts: { numItems: 3, cursor: null } });
-  const friends = usePaginatedQuery(api.friends.list, {}, { initialNumItems: 20 });
-  const [signOutError, setSignOutError] = useState('');
 
-  const header = (
+  return (
     <View style={styles.stack}>
       {!!signOutError && <Notice>{signOutError}</Notice>}
       {me === undefined ? <SkeletonRows count={1} label="Loading your profile…" /> : me === null ? <Notice>Sign in to see your profile.</Notice> : (
@@ -66,40 +99,33 @@ export default function ProfileScreen() {
       )}
     </View>
   );
+}
 
-  const friendsSection = (
+function ProfileFriends() {
+  const me = useQuery(api.users.me, {});
+  const friends = usePaginatedQuery(api.friends.list, {}, { initialNumItems: 20 });
+
+  return (
     <View style={styles.stack}>
       <SectionHeader title="Friends" count={me?.friendCount} />
       {friends.status === 'LoadingFirstPage' && <Loading label="Loading friends…" />}
       {friends.status !== 'LoadingFirstPage' && friends.results.length === 0 && <Notice>No friends yet.</Notice>}
       {friends.results.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendRow}>
         {friends.results.map((person) => (
-          <View key={person._id} style={styles.friend}>
+          <Pressable
+            key={person._id}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${personName(person)}’s profile`}
+            onPress={() => router.push({ pathname: '/user/[id]', params: { id: person._id } })}
+            style={({ pressed }) => [styles.friend, pressed && styles.pressed]}>
             <Avatar initials={personInitials(person)} color={colors.canvas} size={52} />
             <Text variant="caption" weight="semibold" numberOfLines={1}>{personName(person)}</Text>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>}
       {friends.status === 'CanLoadMore' && <AsyncButton label="More friends" variant="link" onPress={async () => friends.loadMore(20)} />}
       {friends.status === 'LoadingMore' && <Loading label="Loading more friends…" />}
     </View>
-  );
-
-  return (
-    <Screen
-      backdrop="profile"
-      headerActions={(<>
-        <IconButton icon="plus" label="New post" onPress={() => router.push('/post/new')} />
-        <AsyncIconButton icon="logOut" label="Sign out" onError={setSignOutError} onPress={async () => {
-          setSignOutError('');
-          await disableAutoCollection(client);
-          await setBackground(false);
-          await disablePush();
-          await signOut();
-        }} />
-      </>)}>
-      <LivePosts mode="mine" header={header} footer={friendsSection} emptyMessage="Tap + to post photos from a place you’ve been." />
-    </Screen>
   );
 }
 
@@ -114,4 +140,5 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.stack },
   friendRow: { gap: space.stack, padding: space.fine },
   friend: { width: 72, alignItems: 'center', gap: space.inline },
+  pressed: { opacity: 0.65 },
 });

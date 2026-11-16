@@ -143,19 +143,28 @@ export default function FriendsScreen() {
   </View>;
 }
 
+function openProfile(userId: Friend['user']['_id']) {
+  router.push({ pathname: '/user/[id]', params: { id: userId } });
+}
+
 function FriendDetails({ friend, now, sharingOn, enableSharing, onSettings }: {
   friend: Friend; now: number; sharingOn: boolean; enableSharing: () => Promise<boolean>; onSettings: () => void;
 }) {
   const setSharing = useMutation(api.friendLocations.setSharing);
   const sharing = friend.sharingWith && sharingOn;
   return <>
-    <View style={styles.identity}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${personName(friend.user)}’s profile`}
+      onPress={() => openProfile(friend.user._id)}
+      style={({ pressed }) => [styles.identity, pressed && styles.pressed]}>
       <Avatar initials={personInitials(friend.user)} color={colors.accent} size={52} />
       <View style={styles.grow}>
         <Text variant="heading" numberOfLines={1}>{personName(friend.user)}</Text>
         <Text variant="bodySmall" color="muted">{friend.location?.city ?? (friend.location ? 'Shared location' : 'Location not available')}</Text>
       </View>
-    </View>
+      <Icon name="chevronRight" size={18} color={colors.muted} />
+    </Pressable>
     {friend.location ? <View style={styles.facts}>
       <View style={styles.fact}><Icon name="compass" size={16} color={colors.accentText} />
         <Text variant="label">{friend.distance !== null ? `${distance(friend.distance)} away` : 'On the globe'}</Text>
@@ -172,8 +181,8 @@ function FriendDetails({ friend, now, sharingOn, enableSharing, onSettings }: {
       if (!sharingOn && !(await enableSharing())) throw new ConvexError({ message: 'Allow location access in Settings to share.' });
       await setSharing({ friendId: friend.user._id, enabled: true });
     }} />
-    <Button label="View latest posts" icon="note" variant="secondary" height={44}
-      onPress={() => router.push({ pathname: '/feed', params: { tab: 'friends', friendId: friend.user._id } })} />
+    <Button label="View profile" icon="user" variant="secondary" height={44}
+      onPress={() => openProfile(friend.user._id)} />
     <Button label="Manage sharing" icon="sliders" variant="secondary" height={44} onPress={onSettings} />
   </>;
 }

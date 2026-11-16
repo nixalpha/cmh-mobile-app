@@ -2,13 +2,19 @@ import { useMutation, usePaginatedQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useState, type ReactElement } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { useCallback, useState, type ReactElement } from 'react';
+import { RefreshControl, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
 import { AsyncButton, AsyncIconButton, Notice, PlaceArt } from '@/components/live-ui';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Glass } from '@/components/ui/glass';
+import {
+  InstagramRefreshSpinner,
+  INSTAGRAM_REFRESH_THRESHOLD,
+  instagramRefreshControlProps,
+} from '@/components/ui/instagram-refresh';
 import { Text } from '@/components/ui/text';
 import { Loading, SkeletonCards } from '@/components/ui/loading';
 import { colors, radius, space } from '@/constants/theme';
@@ -121,19 +127,80 @@ function VisitDetails({ visit }: { visit: NonNullable<Post['visit']> }) {
   );
 }
 
-export function LivePosts({ mode, actorId, header, footer, emptyMessage }: {
+export function LivePosts({ mode, actorId, userId, header, footer, emptyMessage, onRefresh }: {
   mode: 'mine' | 'friends';
   actorId?: Id<'users'>;
+  /** When `mode` is `mine`, load this user’s posts instead of the viewer’s. */
+  userId?: Id<'users'>;
   header?: ReactElement;
   footer?: ReactElement;
   emptyMessage?: string;
+  /** When set, enables Instagram-style pull-to-refresh on this feed. */
+  onRefresh?: () => void | Promise<void>;
 }) {
-  const mine = usePaginatedQuery(api.feed.byUser, mode === 'mine' ? {} : 'skip', { initialNumItems: 10 });
+  const [refreshing, setRefreshing] = useState(false);
+  const [generation, setGeneration] = useState(0);
+  const pull = useSharedValue(0);
+  const busy = useSharedValue(false);
+
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      if (busy.value) return;
+      pull.set(Math.max(0, -event.contentOffset.y));
+    },
+  });
+
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh || refreshing) return;
+    setRefreshing(true);
+    busy.set(true);
+    pull.set(INSTAGRAM_REFRESH_THRESHOLD);
+    try {
+      await onRefresh();
+      setGeneration((value) => value + 1);
+    } finally {
+      setRefreshing(false);
+      busy.set(false);
+      pull.set(0);
+    }
+  }, [busy, onRefresh, pull, refreshing]);
+
+  return (
+    <View style={styles.feed}>
+      {onRefresh && <InstagramRefreshSpinner pull={pull} refreshing={refreshing} />}
+      <LivePostsFeed
+        key={generation}
+        mode={mode}
+        actorId={actorId}
+        userId={userId}
+        header={header}
+        footer={footer}
+        emptyMessage={emptyMessage}
+        refreshing={refreshing}
+        onRefresh={onRefresh ? handleRefresh : undefined}
+        pullScrollHandler={onRefresh ? onScroll : undefined}
+      />
+    </View>
+  );
+}
+
+function LivePostsFeed({ mode, actorId, userId, header, footer, emptyMessage, refreshing, onRefresh, pullScrollHandler }: {
+  mode: 'mine' | 'friends';
+  actorId?: Id<'users'>;
+  userId?: Id<'users'>;
+  header?: ReactElement;
+  footer?: ReactElement;
+  emptyMessage?: string;
+  refreshing: boolean;
+  onRefresh?: () => void;
+  pullScrollHandler?: ReturnType<typeof useAnimatedScrollHandler>;
+}) {
+  const mine = usePaginatedQuery(api.feed.byUser, mode === 'mine' ? (userId ? { userId } : {}) : 'skip', { initialNumItems: 10 });
   const friends = usePaginatedQuery(api.feed.friends, mode === 'friends' ? { actorId } : 'skip', { initialNumItems: 10 });
   const posts = mode === 'mine' ? mine : friends;
 
   return (
-    <FlatList
+    <Animated.FlatList
       data={posts.results}
       keyExtractor={(post) => post._id}
       renderItem={({ item }) => <LivePost post={item} />}
@@ -141,6 +208,15 @@ export function LivePosts({ mode, actorId, header, footer, emptyMessage }: {
       showsVerticalScrollIndicator={false}
       style={styles.feed}
       contentContainerStyle={styles.list}
+      onScroll={pullScrollHandler}
+      scrollEventThrottle={pullScrollHandler ? 16 : undefined}
+      refreshControl={onRefresh ? (
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          {...instagramRefreshControlProps}
+        />
+      ) : undefined}
       ListEmptyComponent={posts.status === 'LoadingFirstPage'
         ? <SkeletonCards count={2} label="Loading posts…" />
         : <Notice>{emptyMessage ?? (mode === 'mine' ? 'Your rankings, saves, and landmarks appear here.'
