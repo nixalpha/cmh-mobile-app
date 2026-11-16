@@ -120,10 +120,11 @@ function VisitDetails({ visit }: { visit: NonNullable<Post['visit']> }) {
   );
 }
 
-export function LivePosts({ mode, actorId, header, emptyMessage }: {
+export function LivePosts({ mode, actorId, header, footer, emptyMessage }: {
   mode: 'mine' | 'friends';
   actorId?: Id<'users'>;
   header?: ReactElement;
+  footer?: ReactElement;
   emptyMessage?: string;
 }) {
   const mine = usePaginatedQuery(api.feed.byUser, mode === 'mine' ? {} : 'skip', { initialNumItems: 10 });
@@ -143,9 +144,13 @@ export function LivePosts({ mode, actorId, header, emptyMessage }: {
         ? 'Loading posts…'
         : emptyMessage ?? (mode === 'mine' ? 'Your rankings, saves, and landmarks appear here.'
           : 'No posts from friends yet.')}</Notice>}
-      ListFooterComponent={posts.status === 'CanLoadMore'
-        ? <AsyncButton label="Load more posts" variant="secondary" onPress={async () => posts.loadMore(10)} />
-        : posts.status === 'LoadingMore' ? <Notice>Loading more posts…</Notice> : undefined}
+      ListFooterComponent={(
+        <View style={styles.footer}>
+          {posts.status === 'CanLoadMore' && <AsyncButton label="Load more posts" variant="secondary" onPress={async () => posts.loadMore(10)} />}
+          {posts.status === 'LoadingMore' && <Notice>Loading more posts…</Notice>}
+          {footer}
+        </View>
+      )}
     />
   );
 }
@@ -153,6 +158,7 @@ export function LivePosts({ mode, actorId, header, emptyMessage }: {
 const styles = StyleSheet.create({
   feed: { flex: 1 },
   list: { gap: space.stack, paddingBottom: space.scrollBottom },
+  footer: { gap: space.stack },
   post: { padding: space.inset, gap: space.stack },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.stack },
   copy: { flex: 1, gap: space.inline },
