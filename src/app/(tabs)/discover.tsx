@@ -20,7 +20,7 @@ export default function DiscoverScreen() {
   return (
     <View style={styles.screen}>
       <DiscoverMap active={focused} />
-      <View style={[styles.friends, { bottom: Math.max(insets.bottom, space.tabBarBottom) + space.tabBarHeight + 16 }]}><Button label="Find my friends" icon="users" variant="glass" onPress={() => router.push('/friends')} /></View>
+      <View style={[styles.friends, { bottom: Math.max(insets.bottom, space.tabBarBottom) + space.tabBarHeight + 16 }]}><Button label="Find my friends" icon="users" variant="glass" height={44} onPress={() => router.push('/friends')} /></View>
       <View pointerEvents="none" style={[styles.logo, {
         top: insets.top + space.screenTop,
         left: insets.left + space.gutter,
