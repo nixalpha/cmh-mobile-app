@@ -10,6 +10,7 @@ import { Glass } from '@/components/ui/glass';
 import { Screen } from '@/components/ui/screen';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Text } from '@/components/ui/text';
+import { SkeletonCards } from '@/components/ui/loading';
 import { radius, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 
@@ -86,9 +87,9 @@ function ForYou({ refreshError }: { refreshError: boolean }) {
         </View>
       }
       ListEmptyComponent={
-        <Notice>{recommendations === undefined || (recommendations.computedAt === null && !refreshError)
-          ? 'Finding places for you…'
-          : 'Add places you’ve visited to discover where to go next.'}</Notice>
+        recommendations === undefined || (recommendations.computedAt === null && !refreshError)
+          ? <SkeletonCards count={2} label="Finding places for you…" artHeight={180} />
+          : <Notice>Add places you’ve visited to discover where to go next.</Notice>
       }
       renderItem={({ item, index }) => (
         <Glass

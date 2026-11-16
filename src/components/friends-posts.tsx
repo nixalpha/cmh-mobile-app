@@ -4,10 +4,10 @@ import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 
 import { FriendManager } from '@/components/friend-manager';
 import { LivePosts, personInitials, personName } from '@/components/live-post';
-import { Notice } from '@/components/live-ui';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { Loading, SkeletonCards } from '@/components/ui/loading';
 import { colors, radius, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 
@@ -23,7 +23,7 @@ export function FriendsPosts({ initialActorId }: {
   const loading = friends.status === 'LoadingFirstPage';
   const empty = !loading && friends.results.length === 0;
 
-  if (loading) return <Notice>Loading friends…</Notice>;
+  if (loading) return <SkeletonCards count={2} label="Loading friends…" />;
   // No friends yet: there are no posts to show, so go straight to finding people.
   if (empty) return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
     contentContainerStyle={styles.find}>
@@ -50,7 +50,7 @@ export function FriendsPosts({ initialActorId }: {
             <Text variant="caption" numberOfLines={1} style={styles.name}>{personName(item)}</Text>
           </Pressable>}
           ListFooterComponent={friends.status === 'CanLoadMore' ? <Button label="More friends" variant="link" height={44} onPress={() => friends.loadMore(30)} />
-            : friends.status === 'LoadingMore' ? <Notice>Loading friends…</Notice> : undefined}
+            : friends.status === 'LoadingMore' ? <Loading label="Loading friends…" /> : undefined}
         />
       </View>
     </View>}

@@ -17,6 +17,7 @@ import { Glass } from '@/components/ui/glass';
 import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
+import { Loading, SkeletonRows } from '@/components/ui/loading';
 import { colors, radius, space } from '@/constants/theme';
 import { api } from '@/lib/backend';
 
@@ -32,7 +33,7 @@ export default function ProfileScreen() {
   const header = (
     <View style={styles.stack}>
       {!!signOutError && <Notice>{signOutError}</Notice>}
-      {me === undefined ? <Notice>Loading your profile…</Notice> : me === null ? <Notice>Sign in to see your profile.</Notice> : (
+      {me === undefined ? <SkeletonRows count={1} label="Loading your profile…" /> : me === null ? <Notice>Sign in to see your profile.</Notice> : (
         <Glass radius={radius.hero} style={styles.card}>
           <View style={styles.identity}>
             <Avatar initials={personInitials(me)} color={colors.canvas} size={72} ring={3} style={styles.photo} />
@@ -46,7 +47,7 @@ export default function ProfileScreen() {
             <StatTile label="Landmarks" value={String(me.stats.landmarks)} />
             <StatTile label="Countries" value={String(me.stats.countries)} />
           </View>}
-          {top === undefined ? <Notice>Loading your rankings…</Notice> : top.page.length > 0 && (
+          {top === undefined ? <Loading label="Loading your rankings…" /> : top.page.length > 0 && (
             <View style={styles.rankings}>
               <Text variant="caption" weight="bold" color="muted">Top places</Text>
               <View style={styles.topRow}>{top.page.map((item, index) => item.destination && (
@@ -69,7 +70,7 @@ export default function ProfileScreen() {
   const friendsSection = (
     <View style={styles.stack}>
       <SectionHeader title="Friends" count={me?.friendCount} />
-      {friends.status === 'LoadingFirstPage' && <Notice>Loading friends…</Notice>}
+      {friends.status === 'LoadingFirstPage' && <Loading label="Loading friends…" />}
       {friends.status !== 'LoadingFirstPage' && friends.results.length === 0 && <Notice>No friends yet.</Notice>}
       {friends.results.length > 0 && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendRow}>
         {friends.results.map((person) => (
@@ -80,7 +81,7 @@ export default function ProfileScreen() {
         ))}
       </ScrollView>}
       {friends.status === 'CanLoadMore' && <AsyncButton label="More friends" variant="link" onPress={async () => friends.loadMore(20)} />}
-      {friends.status === 'LoadingMore' && <Notice>Loading more friends…</Notice>}
+      {friends.status === 'LoadingMore' && <Loading label="Loading more friends…" />}
     </View>
   );
 

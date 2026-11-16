@@ -8,6 +8,7 @@ import { Glass } from '@/components/ui/glass';
 import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
+import { Loading, SkeletonCards } from '@/components/ui/loading';
 import { api } from '@/lib/backend';
 import { space } from '@/constants/theme';
 
@@ -43,11 +44,11 @@ export default function CitiesScreen() {
             </View>
           </Glass>
         )}
-        ListEmptyComponent={<Notice>{status === 'LoadingFirstPage' ? 'Loading your places…' : 'No places yet.'}</Notice>}
+        ListEmptyComponent={status === 'LoadingFirstPage' ? <SkeletonCards count={4} columns={2} artHeight={120} label="Loading your places…" /> : <Notice>No places yet.</Notice>}
         ListFooterComponent={
           <View style={styles.footer}>
             {status === 'CanLoadMore' && <Button label="Load more places" variant="secondary" onPress={() => loadMore(20)} />}
-            {status === 'LoadingMore' && <Notice>Loading more places…</Notice>}
+            {status === 'LoadingMore' && <Loading label="Loading more places…" />}
           </View>
         }
       />

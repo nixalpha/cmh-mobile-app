@@ -10,6 +10,7 @@ import { AsyncButton, Notice } from '@/components/live-ui';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
 import { Text } from '@/components/ui/text';
+import { Loading, SkeletonRows } from '@/components/ui/loading';
 import { colors } from '@/constants/theme';
 import { api } from '@/lib/backend';
 import { friendBackgroundSupported } from '@/lib/friend-background';
@@ -35,7 +36,7 @@ export function FriendLocationSettings() {
   const updateSettings = useMutation(api.friendLocations.updateSettings);
   const share = useMutation(api.friendLocations.setSharing);
   const friends = usePaginatedQuery(api.friendLocations.friends, { now: queryNow }, { initialNumItems: 20 });
-  if (!settings) return <Notice>Loading…</Notice>;
+  if (!settings) return <Loading label="Loading your location settings…" />;
   const city = settings.visitingCity;
   return <>
     <Text variant="heading">Location</Text>
@@ -49,7 +50,7 @@ export function FriendLocationSettings() {
     {friends.results.map(friend => <Toggle key={friend.user._id} label={personName(friend.user)}
       detail={friend.location ? 'Sharing with you' : undefined} value={friend.sharingWith}
       onChange={enabled => share({ friendId: friend.user._id, enabled })} />)}
-    {friends.status === 'LoadingFirstPage' && <Notice>Loading friends…</Notice>}
+    {friends.status === 'LoadingFirstPage' && <SkeletonRows count={2} label="Loading friends…" />}
     {friends.status === 'Exhausted' && friends.results.length === 0 && <Notice>No friends yet.</Notice>}
     {friends.status === 'CanLoadMore' && <Button label="More friends" variant="link" onPress={() => friends.loadMore(20)} />}
     <Text variant="subheading">Alerts</Text>

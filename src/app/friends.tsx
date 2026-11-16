@@ -10,13 +10,14 @@ import { BrandLogo } from '@/components/brand-logo';
 import { useFriendLocation } from '@/components/friend-location-provider';
 import { Globe } from '@/components/globe';
 import { personInitials, personName } from '@/components/live-post';
-import { AsyncButton, Notice } from '@/components/live-ui';
+import { AsyncButton } from '@/components/live-ui';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { IconButton } from '@/components/ui/icon-button';
 import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
+import { Loading, SkeletonRows } from '@/components/ui/loading';
 import { colors, radius, space } from '@/constants/theme';
 import { api } from '@/lib/backend';
 import { SELF_PLACE_ID, selfPlace, type GlobePlace } from '@/lib/globe-bridge';
@@ -129,13 +130,13 @@ export default function FriendsScreen() {
               <Icon name="chevronRight" size={14} color={colors.muted} />
             </View>
           </Pressable>}
-          ListEmptyComponent={<View style={styles.empty}>
+          ListEmptyComponent={loading ? <SkeletonRows count={4} label="Loading your people…" /> : <View style={styles.empty}>
             <View style={styles.emptyIcon}><Icon name={search ? 'search' : 'users'} size={24} color={colors.accentText} /></View>
-            <Text variant="cardTitle">{loading ? 'Loading your people…' : search ? 'No friends found' : 'Good company, anywhere'}</Text>
-            {!loading && !!search && <Text variant="caption" color="muted" style={styles.emptyCopy}>Try another name or handle.</Text>}
-            {!loading && !search && <Button label="Add friends" icon="userPlus" height={32} variant="secondary" onPress={openSettings} />}
+            <Text variant="cardTitle">{search ? 'No friends found' : 'Good company, anywhere'}</Text>
+            {!!search && <Text variant="caption" color="muted" style={styles.emptyCopy}>Try another name or handle.</Text>}
+            {!search && <Button label="Add friends" icon="userPlus" height={32} variant="secondary" onPress={openSettings} />}
           </View>}
-          ListFooterComponent={loadingMore ? <Notice>Loading the rest of your friends…</Notice> : undefined}
+          ListFooterComponent={loadingMore ? <Loading label="Loading the rest of your friends…" /> : undefined}
         />
       </>}
     </View>

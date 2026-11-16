@@ -10,6 +10,7 @@ import { Glass } from '@/components/ui/glass';
 import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
+import { Skeleton, SkeletonRows } from '@/components/ui/loading';
 import { api, type Id } from '@/lib/backend';
 import { importCityPhotos } from '@/lib/import-city-photos';
 import { photoLibrarySupported } from '@/lib/photo-library';
@@ -54,7 +55,7 @@ export default function PlaceScreen() {
         )}
       </>}>
       {!!saveError && <Notice>{saveError}</Notice>}
-      {!destinationId || catalog === null ? <Notice>Place not found.</Notice> : !detail ? <Notice>Loading place…</Notice> : (
+      {!destinationId || catalog === null ? <Notice>Place not found.</Notice> : !detail ? <PlaceSkeleton /> : (
         <>
           <PlaceArt place={detail.destination} height={200} />
           <PhotoCredit image={detail.destination.image} />
@@ -77,7 +78,7 @@ export default function PlaceScreen() {
             <Text color="slate">{detail.viewer.visit?.unlockCount ?? 0}/{detail.destination.landmarkCount} collected</Text>
             {!!importNote && <Notice>{importNote}</Notice>}
             {!detail.viewer.visit && <Notice>Mark this place as visited to add landmarks.</Notice>}
-            {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, photoCount, coverUrl }) => {
+            {landmarks === undefined ? <SkeletonRows count={3} round={false} label="Loading landmarks…" /> : landmarks.length === 0 ? <Notice>No landmarks yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, photoCount, coverUrl }) => {
               const openVisit = () => router.push({ pathname: '/landmark-visit/[id]', params: { id: landmark._id } });
               return (
                 <Glass
@@ -154,6 +155,20 @@ function usePhotoImport(detail: Detail, landmarks: Landmarks) {
       .catch(() => { if (mounted.current) setNote('Couldn’t add your photos. Open this place again to retry.'); });
   }, [ready, client, detail, landmarks]);
   return note;
+}
+
+// Same shape as the loaded page: the picture, then the title card.
+function PlaceSkeleton() {
+  return (
+    <View accessible accessibilityRole="progressbar" accessibilityLabel="Loading place…" style={styles.landmarks}>
+      <Skeleton height={200} />
+      <Glass style={styles.card}>
+        <Skeleton width="30%" height={11} />
+        <Skeleton width="60%" height={28} />
+        <Skeleton height={44} />
+      </Glass>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

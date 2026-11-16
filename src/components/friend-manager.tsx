@@ -8,6 +8,7 @@ import { AsyncButton, AsyncIconButton, Notice } from '@/components/live-ui';
 import { Glass } from '@/components/ui/glass';
 import { IconButton } from '@/components/ui/icon-button';
 import { Text } from '@/components/ui/text';
+import { Loading } from '@/components/ui/loading';
 import { colors, fonts, radius, space } from '@/constants/theme';
 import { api } from '@/lib/backend';
 
@@ -40,7 +41,7 @@ export function FriendManager() {
       <IconButton icon="search" label="Search people" size={SEARCH_HEIGHT} onPress={() => setSearch(text.trim())} />
       </View>
       {!!error && <Notice>{error}</Notice>}
-      {!!search && people === undefined && <Notice>Searching…</Notice>}
+      {!!search && people === undefined && <Loading label="Searching…" />}
       {!!search && people?.length === 0 && <Notice>No one found.</Notice>}
       {people?.map((person) => (
         <View key={person._id} style={styles.person}>
@@ -67,7 +68,7 @@ export function FriendManager() {
         </View>
       ))}
       {incoming.status === 'CanLoadMore' && <AsyncButton label="More requests" variant="link" onPress={async () => incoming.loadMore(10)} />}
-      {incoming.status === 'LoadingMore' && <Notice>Loading more requests…</Notice>}
+      {incoming.status === 'LoadingMore' && <Loading label="Loading more requests…" />}
     </Glass>
   );
 }

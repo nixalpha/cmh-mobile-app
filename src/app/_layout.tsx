@@ -19,6 +19,7 @@ import { BackendProvider } from '@/components/backend-provider';
 import { AsyncButton, Notice } from '@/components/live-ui';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
+import { LoadingScreen } from '@/components/ui/loading';
 import { colors } from '@/constants/theme';
 import { api } from '@/lib/backend';
 
@@ -84,7 +85,7 @@ function SessionRoutes() {
   const me = useQuery(api.users.me, isAuthenticated ? {} : 'skip');
   // Keep the navigator mounted while `me` loads. Swapping it for a loader resets
   // navigation, which used to drop new accounts on Feed instead of onboarding.
-  if (isLoading) return <Screen><Notice>Opening travi…</Notice></Screen>;
+  if (isLoading) return <Screen><LoadingScreen label="Opening travi…" /></Screen>;
   return (
     <AuthenticatedLocationProvider enabled={isAuthenticated && !!me?.handle}>
     <AutoCollectionRunner userId={isAuthenticated ? me?._id : null} />

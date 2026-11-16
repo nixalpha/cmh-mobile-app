@@ -11,6 +11,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Select } from '@/components/ui/select';
 import { Text } from '@/components/ui/text';
+import { Loading } from '@/components/ui/loading';
 import { colors, fonts, radius, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 import { answer, isPlaced, maxPicks, opponentIndex, startRange, type Outcome, type Range } from '../../../convex/lib/ranking';
@@ -26,7 +27,7 @@ export default function RankScreen() {
 
 function RankDestination({ id }: { id: Id<'destinations'> }) {
   const catalog = useQuery(api.destinations.get, { destinationId: id });
-  if (catalog === undefined) return <Screen><Notice>Loading place…</Notice></Screen>;
+  if (catalog === undefined) return <Screen><Loading label="Loading place…" /></Screen>;
   if (catalog === null) return <Screen><Notice>This place is no longer available.</Notice><Button label="Back to places" onPress={() => router.replace('/discover')} /></Screen>;
   return <RankForm id={id} name={catalog.destination.name} />;
 }
@@ -86,7 +87,7 @@ function RankForm({ id, name }: { id: Id<'destinations'>; name: string }) {
           <Notice>{share ? 'Shared with friends.' : 'Saved without a post.'}</Notice>
           <Button label="Done" onPress={() => router.replace(`/place/${id}`)} />
         </Glass>
-      ) : detail === undefined ? <Notice>Loading your ranking…</Notice> : detail.viewer.rank !== null ? (
+      ) : detail === undefined ? <Loading label="Loading your ranking…" /> : detail.viewer.rank !== null ? (
         <Glass style={styles.panel}><Text variant="title2">Already ranked #{detail.viewer.rank}</Text><Notice>Re-ranking isn’t available yet.</Notice><Button label="Back to place" onPress={() => router.replace(`/place/${id}`)} /></Glass>
       ) : !session ? (
         <>

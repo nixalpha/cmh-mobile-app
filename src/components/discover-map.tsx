@@ -10,6 +10,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { SearchField } from '@/components/ui/search-field';
 import { SegmentedControl, type Segment } from '@/components/ui/segmented-control';
 import { Text } from '@/components/ui/text';
+import { Loading } from '@/components/ui/loading';
 import { colors, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 import { MAX_GLOBE_LANDMARKS, SELF_PLACE_ID, selfPlace, type GlobeLandmark, type GlobePlace } from '@/lib/globe-bridge';
@@ -153,7 +154,7 @@ export function DiscoverMap({ active }: { active: boolean }) {
           {searching && (
             <Glass style={styles.results} accessibilityRole="list">
               {results === undefined || query.trim() !== search ? (
-                <Text color="muted" style={styles.status}>Searching…</Text>
+                <View style={styles.status}><Loading label="Searching…" /></View>
               ) : results.length === 0 ? (
                 <Text color="muted" style={styles.status}>No {mode} match “{search}”.</Text>
               ) : results.map((result, index) => (

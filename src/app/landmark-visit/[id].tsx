@@ -18,6 +18,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
+import { Loading } from '@/components/ui/loading';
 import { colors, fonts, radius } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 import { daysAgo, localDay } from '@/lib/exif';
@@ -48,18 +49,18 @@ export default function LandmarkVisitScreen() {
   const sheet = useQuery(api.landmarkVisits.get, landmarkId ? { landmarkId } : 'skip');
 
   if (!landmarkId || sheet === null) return <Message text="This landmark isn’t available." />;
-  if (sheet === undefined) return <Message text="Loading landmark…" />;
+  if (sheet === undefined) return <Message text="Loading landmark…" loading />;
   if (!sheet.destinationVisited) return <Message text={`Add ${sheet.destinationName} to your visits before collecting its landmarks.`} />;
   return <VisitForm key={landmarkId} sheet={sheet} />;
 }
 
-function Message({ text }: { text: string }) {
+function Message({ text, loading = false }: { text: string; loading?: boolean }) {
   return (
     <Screen backdrop="place">
       <View style={styles.bar}>
         <IconButton icon="close" label="Close" onPress={() => router.back()} />
       </View>
-      <Notice>{text}</Notice>
+      {loading ? <Loading label={text} /> : <Notice>{text}</Notice>}
     </Screen>
   );
 }
@@ -227,7 +228,7 @@ function VisitForm({ sheet }: { sheet: Sheet }) {
             <SearchField placeholder="Search friends" value={friendQuery} onChangeText={setFriendQuery} height={44} />
           )}
           {friends.status === 'LoadingFirstPage' ? (
-            <Notice>Loading friends…</Notice>
+            <Loading label="Loading friends…" />
           ) : friendChips.length === 0 ? (
             <Notice>{query ? 'No friends match that search.' : 'Add friends to tag who you went with.'}</Notice>
           ) : (

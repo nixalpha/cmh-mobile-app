@@ -10,6 +10,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Glass } from '@/components/ui/glass';
 import { Text } from '@/components/ui/text';
+import { Loading, SkeletonCards } from '@/components/ui/loading';
 import { colors, radius, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 
@@ -140,14 +141,14 @@ export function LivePosts({ mode, actorId, header, footer, emptyMessage }: {
       showsVerticalScrollIndicator={false}
       style={styles.feed}
       contentContainerStyle={styles.list}
-      ListEmptyComponent={<Notice>{posts.status === 'LoadingFirstPage'
-        ? 'Loading posts…'
-        : emptyMessage ?? (mode === 'mine' ? 'Your rankings, saves, and landmarks appear here.'
+      ListEmptyComponent={posts.status === 'LoadingFirstPage'
+        ? <SkeletonCards count={2} label="Loading posts…" />
+        : <Notice>{emptyMessage ?? (mode === 'mine' ? 'Your rankings, saves, and landmarks appear here.'
           : 'No posts from friends yet.')}</Notice>}
       ListFooterComponent={(
         <View style={styles.footer}>
           {posts.status === 'CanLoadMore' && <AsyncButton label="Load more posts" variant="secondary" onPress={async () => posts.loadMore(10)} />}
-          {posts.status === 'LoadingMore' && <Notice>Loading more posts…</Notice>}
+          {posts.status === 'LoadingMore' && <Loading label="Loading more posts…" />}
           {footer}
         </View>
       )}
