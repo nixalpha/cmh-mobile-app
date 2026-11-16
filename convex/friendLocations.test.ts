@@ -220,3 +220,12 @@ test('selecting a friend from a later map page still checks their current sharin
   expect(await bob.as.query(api.friendLocations.get, { friendId: alice.id, now: Date.now() })).toMatchObject({ user: { _id: alice.id }, location: paris });
   expect(await stranger.as.query(api.friendLocations.get, { friendId: alice.id, now: Date.now() })).toBeNull();
 });
+
+test('publishing a location sets the visiting city from the geocoded name', async () => {
+  const { t, alice } = await pair(); await seedCity(t); await seedCity(t, 'Lyon', 45.764, 4.8357);
+  await enable(alice); await publish(alice);
+  expect((await alice.as.query(api.friendLocations.settings, { now: Date.now() })).visitingCity).toMatchObject({ name: 'Paris' });
+  vi.setSystemTime(Date.now() + 60000);
+  await publish(alice, { lat: -33.87, lng: 151.2, accuracy: 20, city: 'Paris', countryCode: 'FR' });
+  expect((await alice.as.query(api.friendLocations.settings, { now: Date.now() })).visitingCity).toBeNull();
+});

@@ -1,6 +1,7 @@
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 import { distanceKm } from './geo';
+import { fold } from './text';
 import { areFriends, isBlockedEitherWay } from './social';
 
 export const LOCATION_TTL = 24 * 60 * 60 * 1000;
@@ -52,4 +53,28 @@ export async function clearLocationShares(ctx: MutationCtx, a: Id<'users'>, b: I
       if (alert) await ctx.db.delete('locationAlerts', alert._id);
     }
   }
+}
+
+const DETECT_RADIUS_KM = 50;
+
+// The catalog city a location falls in: the geocoded name first, then the city
+// that owns the nearest landmark. Null when neither is close enough.
+export async function detectCity(ctx: Ctx, at: { lat: number; lng: number; city?: string; countryCode?: string }) {
+  const name = at.city ? fold(at.city) : '';
+  if (name) {
+    const matches = await ctx.db.query('destinations').withSearchIndex('search_searchText', q => q.search('searchText', name).eq('status', 'active'))
+      .take(20);
+    const best = matches.filter(city => city.kind === 'city' && (!at.countryCode || city.countryCode === at.countryCode))
+      .map(city => ({ city, distance: distanceKm(at, city) })).filter(item => item.distance <= DETECT_RADIUS_KM)
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (best) return best.city;
+  }
+  const delta = CITY_RADIUS_KM / 110;
+  const landmarks = await ctx.db.query('landmarks').withIndex('by_status_and_lat', q =>
+    q.eq('status', 'active').gte('lat', at.lat - delta).lte('lat', at.lat + delta)).take(500);
+  const nearest = landmarks.map(landmark => ({ landmark, distance: distanceKm(at, landmark) }))
+    .filter(item => item.distance <= CITY_RADIUS_KM).sort((a, b) => a.distance - b.distance)[0];
+  if (!nearest) return null;
+  const city = await ctx.db.get('destinations', nearest.landmark.destinationId);
+  return city?.kind === 'city' && city.status === 'active' ? city : null;
 }

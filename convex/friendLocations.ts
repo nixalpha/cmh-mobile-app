@@ -6,7 +6,7 @@ import type { Id } from './_generated/dataModel';
 import { internalMutation, mutation, query, type MutationCtx } from './_generated/server';
 import { requireUser } from './lib/auth';
 import { fail } from './lib/errors';
-import { ALERT_COOLDOWN, fresh, inCity, LOCATION_TTL, locationFor, nearby, settingsFor, shareFor, visibleLocation } from './lib/friendLocations';
+import { ALERT_COOLDOWN, detectCity, fresh, inCity, LOCATION_TTL, locationFor, nearby, settingsFor, shareFor, visibleLocation } from './lib/friendLocations';
 import { distanceKm, toPoint } from './lib/geo';
 import { areFriends, isBlockedEitherWay } from './lib/social';
 import { toSummary, userSummaryValidator } from './users';
@@ -81,7 +81,8 @@ const locationArgs = { lat: v.number(), lng: v.number(), accuracy: v.number(), c
 async function persistLocation(ctx: MutationCtx, userId: Id<'users'>, args: {
   lat: number; lng: number; accuracy: number; city?: string; countryCode?: string;
 }) {
-  if (!(await settingsFor(ctx, userId))?.enabled) fail('FORBIDDEN', 'Enable location sharing first.');
+  const settings = await settingsFor(ctx, userId);
+  if (!settings?.enabled) fail('FORBIDDEN', 'Enable location sharing first.');
   if (!toPoint(args.lat, args.lng) || !Number.isFinite(args.accuracy) || args.accuracy < 0 || args.accuracy > 100000) {
     fail('INVALID', 'Could not use that location.');
   }
@@ -92,6 +93,10 @@ async function persistLocation(ctx: MutationCtx, userId: Id<'users'>, args: {
     countryCode: args.countryCode?.trim().toUpperCase().slice(0, 2) || undefined, updatedAt };
   if (previous) await ctx.db.replace('friendLocations', previous._id, value);
   else await ctx.db.insert('friendLocations', value);
+  const city = await detectCity(ctx, value);
+  if (city?._id !== settings.visitingDestinationId) {
+    await ctx.db.patch('locationSettings', settings._id, { visitingDestinationId: city?._id });
+  }
   await ctx.scheduler.runAfter(LOCATION_TTL, internal.friendLocations.expire, { userId, updatedAt });
   await ctx.scheduler.runAfter(0, internal.friendLocations.evaluateFriends, { userId, cursor: null });
   return null;
