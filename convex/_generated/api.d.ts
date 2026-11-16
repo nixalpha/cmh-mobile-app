@@ -35,6 +35,7 @@ import type * as notifications from "../notifications.js";
 import type * as places from "../places.js";
 import type * as rankings from "../rankings.js";
 import type * as recommendations from "../recommendations.js";
+import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
 import type {
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   places: typeof places;
   rankings: typeof rankings;
   recommendations: typeof recommendations;
+  seed: typeof seed;
   users: typeof users;
 }>;
 
