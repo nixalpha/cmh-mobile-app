@@ -60,6 +60,7 @@ export default defineSchema({
   })
     .index("by_wikidataId", ["wikidataId"])
     .index("by_status_and_tier_and_popularity", ["status", "tier", "popularity"])
+    .index("by_status_and_kind_and_popularity", ["status", "kind", "popularity"])
     .index("by_status_and_importedAt", ["status", "importedAt"])
     .searchIndex("search_searchText", {
       searchField: "searchText",
@@ -117,6 +118,7 @@ export default defineSchema({
     source: verification,
     unlockCount: v.number(),
   })
+    .index("by_userId", ["userId"])
     .index("by_userId_and_destinationId", ["userId", "destinationId"])
     .index("by_userId_and_countryCode", ["userId", "countryCode"]),
 
@@ -253,6 +255,12 @@ export default defineSchema({
       }),
       v.object({ kind: v.literal("friends_want"), count: v.number() }),
       v.object({
+        kind: v.literal("visited_similar"),
+        sourceId: v.id("destinations"),
+        sourceCount: v.number(),
+        basis: v.union(v.literal("nearby"), v.literal("similar")),
+      }),
+      v.object({
         kind: v.literal("similar_to"),
         sourceId: v.id("destinations"),
         sourceRank: v.number(),
@@ -266,6 +274,7 @@ export default defineSchema({
     userId: v.id("users"),
     computedAt: v.optional(v.number()),
     pending: v.boolean(),
+    algorithmVersion: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
 
   friendRequests: defineTable({

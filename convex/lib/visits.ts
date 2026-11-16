@@ -3,6 +3,7 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { postActivity, removeActivities, UNLOCK_COALESCE_MS } from "./activities";
 import { fail } from "./errors";
 import { removeRanking } from "./lists";
+import { scheduleRecompute } from "./recommendations";
 
 type Counter = "visitCount" | "unlockCount" | "countryCount";
 
@@ -102,6 +103,7 @@ export async function createUnlock(
   const unlockedCount = visit.unlockCount + 1;
   await ctx.db.patch("visits", visit._id, { unlockCount: unlockedCount });
   await bumpUser(ctx, visit.userId, "unlockCount", 1);
+  await scheduleRecompute(ctx, visit.userId);
   return { unlockId, unlockedCount };
 }
 
@@ -209,6 +211,7 @@ export async function deleteUnlock(ctx: MutationCtx, unlock: Doc<"landmarkUnlock
   if (visit !== null) {
     await ctx.db.patch("visits", visit._id, { unlockCount: Math.max(0, visit.unlockCount - 1) });
   }
+  await scheduleRecompute(ctx, unlock.userId);
 }
 
 export async function deleteVisit(ctx: MutationCtx, visit: Doc<"visits">) {

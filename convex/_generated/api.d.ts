@@ -25,6 +25,7 @@ import type * as lib_friendLocations from "../lib/friendLocations.js";
 import type * as lib_geo from "../lib/geo.js";
 import type * as lib_lists from "../lib/lists.js";
 import type * as lib_ranking from "../lib/ranking.js";
+import type * as lib_recommendationScoring from "../lib/recommendationScoring.js";
 import type * as lib_recommendations from "../lib/recommendations.js";
 import type * as lib_social from "../lib/social.js";
 import type * as lib_text from "../lib/text.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   "lib/geo": typeof lib_geo;
   "lib/lists": typeof lib_lists;
   "lib/ranking": typeof lib_ranking;
+  "lib/recommendationScoring": typeof lib_recommendationScoring;
   "lib/recommendations": typeof lib_recommendations;
   "lib/social": typeof lib_social;
   "lib/text": typeof lib_text;
