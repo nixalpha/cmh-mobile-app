@@ -25,6 +25,8 @@ While it reads, a 3x3 grid flips through thumbnails of the photos being checked;
 
 The first time you open a city you've visited, the app reads photos taken within 25 km of it. A photo within 300 m of one of the city's landmarks collects that landmark with the photo, dated by the earliest one. Up to 10 of the remaining city photos become one post. Photos are resized and stripped of location data before upload, and hashed asset IDs (`autoPhotoReceipts`) stop the same photo importing twice. The visit's `photosImportedAt` makes this a one-time import per city. All imported landmarks and posts are visible to friends.
 
+Tap a landmark on a place screen to expand it: it shows the first sentence or two of its English Wikipedia article and a **Read on Wikipedia** link. The blurb is fetched through Wikidata the first time anyone opens that landmark and cached in `landmarkSummaries`. Landmarks with no English article show the Wikidata description and no link.
+
 The **+** on the Profile tab posts photos from a place you've visited. It shows camera-roll photos taken in that place to choose from, and dates the post from the earliest one (`posted` activities, photos in `postPhotos`).
 
 In development, tap **Dev mode — skip onboarding** on the welcome or sign-in screen (or open `/dev` on web) to go straight to Discover. The shortcut creates a test account for this device/browser, completes its profile, and reuses it on later visits. It uses the configured Convex deployment and the usual authenticated APIs. Sign out from Profile to return to sign-in. The shortcut and `/dev` are disabled in production builds.
