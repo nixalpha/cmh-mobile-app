@@ -45,7 +45,7 @@ export function ContactFinder({ onError }: { onError: (message: string) => void 
       for (const match of page) found.set(match.phoneKey, byKey.get(match.phoneKey) ?? '');
     }
     setNames(found);
-    if (found.size === 0) setMessage('None of your contacts are on Travi yet.');
+    if (found.size === 0) setMessage('No contacts on Travi yet.');
   }
 
   async function savePhone() {
@@ -56,15 +56,14 @@ export function ContactFinder({ onError }: { onError: (message: string) => void 
   }
 
   return <View style={styles.section}>
-    <Text variant="subheading">From your contacts</Text>
     {me && !me.hasPhone && <View style={styles.row}>
-      <TextInput accessibilityLabel="Your phone number" placeholder="Your number, so friends find you" placeholderTextColor={colors.muted}
+      <TextInput accessibilityLabel="Your phone number" placeholder="Your phone number" placeholderTextColor={colors.muted}
         keyboardType="phone-pad" textContentType="telephoneNumber" value={phone} onChangeText={setPhone} style={styles.input} />
       <AsyncIconButton icon="check" label="Save phone number" disabled={!phone.trim()} onError={onError} onPress={savePhone} />
     </View>}
-    <AsyncButton label={names ? 'Rescan contacts' : 'Connect contacts'} variant="secondary" onPress={() => connect().catch(() => setMessage('Could not read your contacts. Try again.'))} />
+    <AsyncButton label={names ? 'Rescan contacts' : 'Find from contacts'} variant="secondary" height={40} onPress={() => connect().catch(() => setMessage('Could not read contacts.'))} />
     {!!message && <Notice>{message}</Notice>}
-    {message === 'Contacts access is off.' && <AsyncButton label="Open device settings" variant="link" onPress={openSettings} />}
+    {message === 'Contacts access is off.' && <AsyncButton label="Open settings" variant="link" onPress={openSettings} />}
     {matches?.map(person => (
       <View key={person._id} style={styles.row}>
         <View style={styles.copy}>
