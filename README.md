@@ -21,6 +21,12 @@ Use `bun run web` for the web app. Native development builds can be created with
 
 New accounts go through onboarding once: the app reads where your photos were taken (on device, nothing uploaded) to suggest the cities you've visited, then asks for each permission. Completion is stored on the account (`users.onboardedAt`).
 
+Only first-run onboarding scans the camera roll for cities. The **+** on the Places tab opens the same picker without scanning.
+
+The first time you open a city you've visited, the app reads photos taken within 25 km of it. A photo within 300 m of one of the city's landmarks collects that landmark with the photo, dated by the earliest one. Up to 10 of the remaining city photos become one post. Photos are resized and stripped of location data before upload, and hashed asset IDs (`autoPhotoReceipts`) stop the same photo importing twice. The visit's `photosImportedAt` makes this a one-time import per city. All imported landmarks and posts are visible to friends.
+
+The **+** on the Profile tab posts photos from a place you've visited. It shows camera-roll photos taken in that place to choose from, and dates the post from the earliest one (`posted` activities, photos in `postPhotos`).
+
 In development, tap **Dev mode — skip onboarding** on the welcome or sign-in screen (or open `/dev` on web) to go straight to Discover. The shortcut creates a test account for this device/browser, completes its profile, and reuses it on later visits. It uses the configured Convex deployment and the usual authenticated APIs. Sign out from Profile to return to sign-in. The shortcut and `/dev` are disabled in production builds.
 
 ### Mock users
