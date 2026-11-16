@@ -1,5 +1,6 @@
-import { usePaginatedQuery } from 'convex/react';
+import { useMutation, usePaginatedQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
+import { ConvexError } from 'convex/values';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -9,7 +10,7 @@ import { BrandLogo } from '@/components/brand-logo';
 import { useFriendLocation } from '@/components/friend-location-provider';
 import { Globe } from '@/components/globe';
 import { personInitials, personName } from '@/components/live-post';
-import { Notice } from '@/components/live-ui';
+import { AsyncButton, Notice } from '@/components/live-ui';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -18,7 +19,8 @@ import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
 import { colors, radius, space } from '@/constants/theme';
 import { api } from '@/lib/backend';
-import type { GlobePlace } from '@/lib/globe-bridge';
+import { SELF_PLACE_ID, selfPlace, type GlobePlace } from '@/lib/globe-bridge';
+import { useDeviceLocation } from '@/lib/use-device-location';
 
 type Friend = FunctionReturnType<typeof api.friendLocations.friends>['page'][number];
 function ago(time: number, now: number) {
@@ -29,7 +31,7 @@ function distance(km: number) { return km < 1 ? 'Less than 1 km' : `${Math.round
 
 export default function FriendsScreen() {
   const insets = useSafeAreaInsets();
-  const { now, queryNow, settings } = useFriendLocation();
+  const { now, queryNow, settings, enable } = useFriendLocation();
   const friends = usePaginatedQuery(api.friendLocations.friends, { now: queryNow }, { initialNumItems: 100 });
   const { status: friendStatus, loadMore: loadFriends } = friends;
   const [search, setSearch] = useState('');
@@ -39,6 +41,10 @@ export default function FriendsScreen() {
   const [focused, setFocused] = useState(false);
   const [expanded, setExpanded] = useState(false);
   useFocusEffect(useCallback(() => { setFocused(true); return () => setFocused(false); }, []));
+  // Your own dot comes from this device, so it shows even when sharing is off.
+  // The last shared fix is the fallback while GPS starts or if access is off.
+  const device = useDeviceLocation(focused);
+  const me = useMemo(() => selfPlace(device.position ?? settings?.location), [device.position, settings?.location]);
   // Load every accepted friend, including people who aren't sharing a location.
   // The list stays virtualized; location access is still checked by the backend.
   useEffect(() => { if (friendStatus === 'CanLoadMore') loadFriends(100); }, [friendStatus, loadFriends]);
@@ -51,10 +57,10 @@ export default function FriendsScreen() {
       _id: friend.user._id, name: personName(friend.user), lat: friend.location.lat, lng: friend.location.lng,
       markerKind: 'friend' as const, initials: personInitials(friend.user), accuracy: friend.location.accuracy,
     }] : []);
-    if (settings?.location) markers.push({ _id: 'me', name: 'You', lat: settings.location.lat, lng: settings.location.lng,
-      markerKind: 'self', initials: 'You', accuracy: settings.location.accuracy });
+    if (me) markers.push(me);
     return markers;
-  }, [friends.results, settings]);
+  }, [friends.results, me]);
+  const locate = () => me ? select(SELF_PLACE_ID) : void device.locate(() => select(SELF_PLACE_ID)).catch(() => {});
   const visible = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     return friends.results.filter(friend => !term || `${personName(friend.user)} ${friend.user.handle ?? ''}`.toLocaleLowerCase().includes(term))
@@ -81,7 +87,8 @@ export default function FriendsScreen() {
       </View>
     </View>
     <View style={[styles.locate, { top: insets.top + space.screenTop + 56, right: insets.right + space.gutter }]}>
-      <IconButton icon="compass" label="Find my location" variant="ink" disabled={!settings?.location} onPress={() => select('me')} />
+      <IconButton icon="compass" label="Find my location" variant="ink" selected={selectedId === SELF_PLACE_ID}
+        onPress={locate} />
     </View>
     <View style={[styles.sheet, { height: panelHeight, paddingBottom: Math.max(insets.bottom, 12),
       paddingLeft: insets.left + space.gutter, paddingRight: insets.right + space.gutter }]}>
@@ -102,7 +109,7 @@ export default function FriendsScreen() {
         </>}
       </View>
       {selected ? <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailContent}>
-        <FriendDetails friend={selected} now={now} onSettings={openSettings} />
+        <FriendDetails friend={selected} now={now} sharingOn={!!settings?.enabled} enableSharing={enable} onSettings={openSettings} />
       </ScrollView> : <>
         {(friends.results.length > 0 || !!search) && <SearchField placeholder="Find a friend" height={40} value={search} onChangeText={setSearch} />}
         <FlatList data={visible} keyExtractor={item => item.user._id} style={styles.list}
@@ -135,7 +142,11 @@ export default function FriendsScreen() {
   </View>;
 }
 
-function FriendDetails({ friend, now, onSettings }: { friend: Friend; now: number; onSettings: () => void }) {
+function FriendDetails({ friend, now, sharingOn, enableSharing, onSettings }: {
+  friend: Friend; now: number; sharingOn: boolean; enableSharing: () => Promise<boolean>; onSettings: () => void;
+}) {
+  const setSharing = useMutation(api.friendLocations.setSharing);
+  const sharing = friend.sharingWith && sharingOn;
   return <>
     <View style={styles.identity}>
       <Avatar initials={personInitials(friend.user)} color={colors.accent} size={52} />
@@ -153,7 +164,13 @@ function FriendDetails({ friend, now, onSettings }: { friend: Friend; now: numbe
         <Text variant="caption" color="muted">Accurate to ±{Math.max(1, Math.round(friend.location.accuracy)).toLocaleString()} m</Text></View>
     </View> : <Text variant="bodySmall" color="muted">Their location will appear when they choose to share it with you and have a recent update.</Text>}
     <View style={styles.sharingInfo}><Icon name={friend.sharingWith ? 'share' : 'lock'} size={16} color={colors.muted} />
-      <Text variant="caption" color="muted" style={styles.grow}>{friend.sharingWith ? 'You’ve chosen to share your location with this friend.' : 'You’re not sharing your location with this friend.'}</Text></View>
+      <Text variant="caption" color="muted" style={styles.grow}>{sharing ? 'They can see your location.'
+        : friend.sharingWith ? 'Turn on location to let them see you.' : 'They can’t see your location.'}</Text></View>
+    <AsyncButton label={sharing ? 'Stop sharing my location' : 'Share my location'} variant="secondary" height={44} onPress={async () => {
+      if (sharing) { await setSharing({ friendId: friend.user._id, enabled: false }); return; }
+      if (!sharingOn && !(await enableSharing())) throw new ConvexError({ message: 'Allow location access in Settings to share.' });
+      await setSharing({ friendId: friend.user._id, enabled: true });
+    }} />
     <Button label="View latest posts" icon="note" variant="secondary" height={44}
       onPress={() => router.push({ pathname: '/feed', params: { tab: 'friends', friendId: friend.user._id } })} />
     <Button label="Manage sharing" icon="sliders" variant="secondary" height={44} onPress={onSettings} />

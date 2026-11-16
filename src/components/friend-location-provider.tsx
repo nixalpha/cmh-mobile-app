@@ -19,7 +19,8 @@ type LocationContext = {
   pushMessage: string;
   backgroundEnabled: boolean;
   setBackground: (enabled: boolean) => Promise<void>;
-  enable: () => Promise<void>;
+  /** Turns on sharing. False when location access was refused. */
+  enable: () => Promise<boolean>;
   refresh: () => void;
   enablePush: () => Promise<void>;
   disablePush: () => Promise<void>;
@@ -132,9 +133,10 @@ export function FriendLocationProvider({ children }: { children: ReactNode }) {
   const enable = useCallback(async () => {
     setError('');
     const permission = await Location.requestForegroundPermissionsAsync();
-    if (!permission.granted) { setError('Location access was not granted. You can change this in your device or browser settings.'); return; }
+    if (!permission.granted) { setError('Location access was not granted. You can change this in your device or browser settings.'); return false; }
     await updateSettings({ enabled: true });
     setRevision(value => value + 1);
+    return true;
   }, [updateSettings]);
   const refresh = useCallback(() => setRevision(value => value + 1), []);
   const enablePush = useCallback(async () => {
