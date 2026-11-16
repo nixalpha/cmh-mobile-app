@@ -10,13 +10,16 @@
 
 import type * as auth from "../auth.js";
 import type * as catalog from "../catalog.js";
+import type * as crons from "../crons.js";
 import type * as destinations from "../destinations.js";
 import type * as feed from "../feed.js";
 import type * as friends from "../friends.js";
+import type * as landmarkVisits from "../landmarkVisits.js";
 import type * as landmarks from "../landmarks.js";
 import type * as lib_activities from "../lib/activities.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_geo from "../lib/geo.js";
 import type * as lib_lists from "../lib/lists.js";
 import type * as lib_ranking from "../lib/ranking.js";
 import type * as lib_recommendations from "../lib/recommendations.js";
@@ -38,13 +41,16 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   catalog: typeof catalog;
+  crons: typeof crons;
   destinations: typeof destinations;
   feed: typeof feed;
   friends: typeof friends;
+  landmarkVisits: typeof landmarkVisits;
   landmarks: typeof landmarks;
   "lib/activities": typeof lib_activities;
   "lib/auth": typeof lib_auth;
   "lib/errors": typeof lib_errors;
+  "lib/geo": typeof lib_geo;
   "lib/lists": typeof lib_lists;
   "lib/ranking": typeof lib_ranking;
   "lib/recommendations": typeof lib_recommendations;

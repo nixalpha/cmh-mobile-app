@@ -1,16 +1,17 @@
 import { useMutation, useQuery } from 'convex/react';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AsyncButton, AsyncIconButton, Notice, PlaceArt } from '@/components/live-ui';
+import { AsyncButton, AsyncIconButton, Notice, PhotoCredit, PlaceArt } from '@/components/live-ui';
 import { Button } from '@/components/ui/button';
 import { Glass } from '@/components/ui/glass';
 import { IconButton } from '@/components/ui/icon-button';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { api, type Id } from '@/lib/backend';
-import { space } from '@/constants/theme';
+import { radius, space } from '@/constants/theme';
 
 export default function PlaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,10 +22,8 @@ export default function PlaceScreen() {
   const save = useMutation(api.places.save);
   const unsave = useMutation(api.places.unsave);
   const addVisit = useMutation(api.places.addVisit);
-  const unlock = useMutation(api.places.unlockLandmark);
   const lock = useMutation(api.places.lockLandmark);
   const [saveError, setSaveError] = useState('');
-  const [landmarkError, setLandmarkError] = useState('');
 
   return (
     <Screen backdrop="place" scroll headerActions={<>
@@ -46,6 +45,7 @@ export default function PlaceScreen() {
       {!destinationId || catalog === null ? <Notice>Place not found.</Notice> : !detail ? <Notice>Loading place…</Notice> : (
         <>
           <PlaceArt place={detail.destination} height={200} />
+          <PhotoCredit image={detail.destination.image} />
           <Glass style={styles.card}>
             <Text variant="eyebrow" color="muted">{detail.destination.countryName} · {detail.destination.kind}</Text>
             <Text variant="title" accessibilityRole="header">{detail.destination.name}</Text>
@@ -66,32 +66,38 @@ export default function PlaceScreen() {
           </Glass>
           <View style={styles.landmarks}>
             <Text variant="title2">Landmarks</Text>
-            <Text color="slate">{detail.viewer.visit?.unlockCount ?? 0} of {detail.destination.landmarkCount} collected</Text>
-            {!detail.viewer.visit && <Notice>Mark this place visited to unlock landmarks.</Notice>}
-            {!!landmarkError && <Notice>{landmarkError}</Notice>}
-            {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks yet.</Notice> : landmarks.map(({ landmark, unlocked, friendsUnlocked }) => (
-              <Glass key={landmark._id} style={[styles.card, styles.landmark]}>
-                <View style={styles.landmarkCopy}>
-                  <Text variant="cardTitle">{landmark.name}</Text>
-                  <Text variant="caption" color="muted">{landmark.category}</Text>
-                  {unlocked && <Text color="slate">Collected</Text>}
-                  {friendsUnlocked > 0 && <Text variant="caption" color="muted">{friendsUnlocked} friends collected</Text>}
-                </View>
-                {detail.viewer.visit && (
-                  <AsyncIconButton
-                    icon="check"
-                    variant={unlocked ? 'ink' : 'glass'}
-                    label={unlocked ? `Undo ${landmark.name}` : `I’ve been to ${landmark.name}`}
-                    selected={unlocked}
-                    onError={setLandmarkError}
-                    onPress={async () => {
-                      setLandmarkError('');
-                      await (unlocked ? lock({ landmarkId: landmark._id }) : unlock({ landmarkId: landmark._id }));
-                    }}
-                  />
-                )}
-              </Glass>
-            ))}
+            <Text color="slate">{detail.viewer.visit?.unlockCount ?? 0} collected · {detail.destination.landmarkCount} in the catalog</Text>
+            <Text variant="caption" color="muted">Mark places you’ve visited by hand. Landmarks are self-reported unless you attach a photo taken there.</Text>
+            {!detail.viewer.visit && <Notice>Add this place to your visits to unlock its landmarks.</Notice>}
+            {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks in this catalog yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, friendsUnlocked, photoCount, coverUrl }) => {
+              const openVisit = () => router.push({ pathname: '/landmark-visit/[id]', params: { id: landmark._id } });
+              return (
+                <Glass key={landmark._id} style={styles.card}>
+                  <View style={styles.landmarkRow}>
+                    {coverUrl && (
+                      <Image source={{ uri: coverUrl }} style={styles.cover} contentFit="cover" recyclingKey={landmark._id} accessibilityLabel={`Your photo of ${landmark.name}`} />
+                    )}
+                    <View style={styles.landmarkCopy}>
+                      <Text variant="cardTitle">{landmark.name}</Text>
+                      <Text variant="caption" color="muted">{landmark.category}</Text>
+                      <Text color="slate">
+                        {unlocked ? (verification === 'photo' ? 'Collected · photo-verified' : 'Collected') : 'Not collected'}
+                        {photoCount > 0 ? ` · ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  {friendsUnlocked > 0 && <Text variant="caption" color="muted">{friendsUnlocked} friends collected this</Text>}
+                  {detail.viewer.visit && (unlocked ? (
+                    <>
+                      <Button label="Edit visit" variant="secondary" onPress={openVisit} />
+                      <AsyncButton label="Mark as not visited" variant="link" onPress={() => lock({ landmarkId: landmark._id })} />
+                    </>
+                  ) : (
+                    <Button label="I visited this landmark" variant="secondary" onPress={openVisit} />
+                  ))}
+                </Glass>
+              );
+            })}
           </View>
         </>
       )}
@@ -102,6 +108,7 @@ export default function PlaceScreen() {
 const styles = StyleSheet.create({
   card: { padding: space.inset, gap: space.stack },
   landmarks: { gap: space.stack },
-  landmark: { flexDirection: 'row', alignItems: 'center' },
+  landmarkRow: { flexDirection: 'row', gap: space.inset, alignItems: 'center' },
   landmarkCopy: { flex: 1, gap: space.inline },
+  cover: { width: 64, height: 64, borderRadius: radius.card },
 });

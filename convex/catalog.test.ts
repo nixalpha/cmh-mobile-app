@@ -101,6 +101,26 @@ test("re-importing updates in place, and retiring hides what the new import drop
   });
 });
 
+test("destination photos are stored, returned, and cleared by a re-import without one", async () => {
+  const t = setup();
+  const image = {
+    url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Paris.jpg/1280px-Paris.jpg",
+    width: 1280,
+    height: 853,
+    credit: "Jane Doe",
+    license: "CC BY-SA 4.0",
+    sourceUrl: "https://commons.wikimedia.org/wiki/File:Paris.jpg",
+  };
+  await t.mutation(internal.catalog.upsertDestinations, { importedAt: 1, rows: [{ ...place("Q2", "Paris", 1, 0.9), image }] });
+  const { as } = await signUp(t, "alice");
+  const [paris] = await as.query(api.destinations.search, { query: "paris" });
+  expect(paris.image).toEqual(image);
+  expect((await as.query(api.destinations.get, { destinationId: paris._id }))?.destination.image).toEqual(image);
+
+  await t.mutation(internal.catalog.upsertDestinations, { importedAt: 2, rows: [place("Q2", "Paris", 1, 0.9)] });
+  expect((await as.query(api.destinations.get, { destinationId: paris._id }))?.destination.image).toBeNull();
+});
+
 test("neighbors are replaced on each import", async () => {
   const t = setup();
   await seed(t);

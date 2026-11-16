@@ -1,5 +1,6 @@
 import { useMutation, usePaginatedQuery } from 'convex/react';
 import type { FunctionReturnType } from 'convex/server';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState, type ReactElement } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -64,6 +65,7 @@ export function LivePost({ post }: { post: Post }) {
           {post.ranking.note && <Text variant="bodySmall">{post.ranking.note}</Text>}
         </View>
       )}
+      {post.visit && <VisitDetails visit={post.visit} />}
       {post.unlock && (
         <Text variant="meta" color="muted">{post.unlock.unlockedCount} of {post.unlock.landmarkTotal} landmarks</Text>
       )}
@@ -85,6 +87,36 @@ export function LivePost({ post }: { post: Post }) {
       </View>
       {!!likeError && <Notice>{likeError}</Notice>}
     </Glass>
+  );
+}
+
+function VisitDetails({ visit }: { visit: NonNullable<Post['visit']> }) {
+  const more = visit.photoCount - visit.photos.length;
+  const day = visit.visitedOn?.split('-').map(Number);
+  return (
+    <View style={styles.copy}>
+      {visit.photos.length > 0 && (
+        <View style={styles.photos}>
+          {visit.photos.map((photo, i) => (
+            <View key={photo.url} style={styles.photo}>
+              <Image source={{ uri: photo.url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+              {more > 0 && i === visit.photos.length - 1 && (
+                <View style={styles.more}><Text variant="label" color="white">+{more}</Text></View>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+      {(visit.companions.length > 0 || day) && (
+        <Text variant="meta" color="muted">
+          {[
+            visit.companions.length > 0 ? `With ${visit.companions.map(personName).join(', ')}` : null,
+            day ? new Date(day[0], day[1] - 1, day[2]).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : null,
+          ].filter(Boolean).join(' · ')}
+        </Text>
+      )}
+      {visit.note && <Text variant="bodySmall">{visit.note}</Text>}
+    </View>
   );
 }
 
@@ -125,6 +157,9 @@ const styles = StyleSheet.create({
   placeLabel: { padding: space.inset },
   pair: { padding: space.inset, borderRadius: radius.card, backgroundColor: colors.tile, flexDirection: 'row', alignItems: 'center', gap: space.stack },
   side: { flex: 1 },
+  photos: { flexDirection: 'row', gap: space.inline },
+  photo: { flex: 1, aspectRatio: 1, borderRadius: radius.card, overflow: 'hidden', backgroundColor: colors.inkTint },
+  more: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(14,17,22,0.45)' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.inline },
   comments: { marginLeft: space.stack },
 });

@@ -4,13 +4,17 @@ import {
   assignLandmarks,
   assignTiers,
   computeNeighbors,
+  commonsFileName,
   Grid,
   haversineKm,
+  pickImage,
+  plainCredit,
   searchText,
   seeListings,
   TIER_1_SIZE,
   type Candidate,
   type Destination,
+  type ImageInfo,
 } from "./lib";
 
 const destination = (overrides: Partial<Destination> & Pick<Destination, "wikidataId" | "lat" | "lng">): Destination => ({
@@ -167,4 +171,69 @@ test("neighbors are nearby places first, then similar ones farther away", () => 
     { wikidataId: "kyoto", basis: "similar" },
   ]);
   expect(neighbors.has("minor")).toBe(false);
+});
+
+const photo = (file: string, overrides: Partial<ImageInfo> = {}): [string, ImageInfo] => [
+  file,
+  {
+    file,
+    mime: "image/jpeg",
+    width: 4000,
+    height: 2600,
+    thumbUrl: `https://upload.wikimedia.org/thumb/${file}`,
+    thumbWidth: 1280,
+    thumbHeight: 832,
+    pageUrl: `https://commons.wikimedia.org/wiki/File:${file}`,
+    credit: "A. Photographer",
+    license: "CC BY-SA 4.0",
+    ...overrides,
+  },
+];
+
+test("commonsFileName decodes Special:FilePath URLs", () => {
+  expect(commonsFileName("http://commons.wikimedia.org/wiki/Special:FilePath/Paris%20ao%C3%BBt_2014.jpg")).toBe("Paris août 2014.jpg");
+  expect(commonsFileName("http://example.com/elsewhere.jpg")).toBeNull();
+});
+
+test("plainCredit strips HTML and trims long credits", () => {
+  expect(plainCredit('<a href="//commons.wikimedia.org/wiki/User:X">Jane&nbsp;Doe</a> &amp; <b>Co</b>')).toBe("Jane Doe & Co");
+  const long = plainCredit("x".repeat(200));
+  expect(long).toHaveLength(80);
+  expect(long.endsWith("…")).toBe(true);
+});
+
+test("pickImage takes the first usable landscape photo", () => {
+  const info = new Map([
+    photo("Tall.jpg", { width: 2000, height: 3000 }),
+    photo("Paris locator map.png", { mime: "image/png" }),
+    photo("Emblem.svg", { mime: "image/svg+xml" }),
+    photo("Tiny.jpg", { width: 640, height: 400 }),
+    photo("Earth.jpg", { credit: "NASA World Wind" }),
+    photo("Skyline.jpg"),
+    photo("Later.jpg"),
+  ]);
+  const picked = pickImage(["Missing.jpg", "Tall.jpg", "Paris locator map.png", "Emblem.svg", "Tiny.jpg", "Earth.jpg", "Skyline.jpg", "Later.jpg"], [], info);
+  expect(picked).toEqual({
+    source: "photo",
+    image: {
+      url: "https://upload.wikimedia.org/thumb/Skyline.jpg",
+      width: 1280,
+      height: 832,
+      credit: "A. Photographer",
+      license: "CC BY-SA 4.0",
+      sourceUrl: "https://commons.wikimedia.org/wiki/File:Skyline.jpg",
+    },
+  });
+});
+
+test("pickImage falls back to a wide banner, then to nothing", () => {
+  const info = new Map<string, ImageInfo | null>([
+    photo("Portrait.jpg", { width: 1000, height: 1500 }),
+    photo("City banner.jpg", { width: 2100, height: 300, credit: "" }),
+    ["Deleted.jpg", null],
+  ]);
+  const picked = pickImage(["Portrait.jpg", "Deleted.jpg"], ["City banner.jpg"], info);
+  expect(picked?.source).toBe("banner");
+  expect(picked?.image.credit).toBe("Wikimedia Commons");
+  expect(pickImage(["Portrait.jpg"], ["Deleted.jpg"], info)).toBeNull();
 });

@@ -15,6 +15,7 @@ import { notify } from "./lib/activities";
 import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { areFriends } from "./lib/social";
+import { photoUrls, unlockPhotos } from "./lib/visits";
 import { rankedList } from "./schema";
 import { toSummary, userSummaryValidator } from "./users";
 
@@ -44,6 +45,16 @@ const postValidator = v.object({
     v.null(),
   ),
   unlock: v.union(v.object({ unlockedCount: v.number(), landmarkTotal: v.number() }), v.null()),
+  visit: v.union(
+    v.object({
+      visitedOn: v.union(v.string(), v.null()),
+      note: v.union(v.string(), v.null()),
+      companions: v.array(userSummaryValidator),
+      photos: v.array(v.object({ url: v.string(), width: v.number(), height: v.number() })),
+      photoCount: v.number(),
+    }),
+    v.null(),
+  ),
   likeCount: v.number(),
   commentCount: v.number(),
   likedByViewer: v.boolean(),
@@ -55,6 +66,29 @@ async function itemName(ctx: QueryCtx, list: Doc<"rankings">["list"], id: Doc<"r
       ? await ctx.db.get("destinations", id as Id<"destinations">)
       : await ctx.db.get("landmarks", id as Id<"landmarks">);
   return doc?.name ?? null;
+}
+
+const FEED_PHOTOS = 4;
+
+async function visitDetails(ctx: QueryCtx, actorId: Id<"users">, landmarkId: Id<"landmarks">) {
+  const unlock = await ctx.db
+    .query("landmarkUnlocks")
+    .withIndex("by_userId_and_landmarkId", (q) => q.eq("userId", actorId).eq("landmarkId", landmarkId))
+    .unique();
+  if (unlock === null) return null;
+  const [all, companions] = await Promise.all([
+    unlockPhotos(ctx, unlock._id),
+    Promise.all((unlock.companionIds ?? []).map((id) => ctx.db.get("users", id))),
+  ]);
+  const shown = await photoUrls(ctx, unlock._id, FEED_PHOTOS);
+  if (!unlock.note && !unlock.visitedOn && companions.length === 0 && all.length === 0) return null;
+  return {
+    visitedOn: unlock.visitedOn ?? null,
+    note: unlock.note ?? null,
+    companions: companions.filter((user): user is Doc<"users"> => user !== null).map(toSummary),
+    photos: shown.map(({ url, width, height }) => ({ url, width, height })),
+    photoCount: all.length,
+  };
 }
 
 async function toPost(ctx: QueryCtx, viewerId: Id<"users">, activity: Doc<"activities">) {
@@ -98,6 +132,7 @@ async function toPost(ctx: QueryCtx, viewerId: Id<"users">, activity: Doc<"activ
       activity.type === "unlocked"
         ? { unlockedCount: activity.unlockedCount, landmarkTotal: activity.landmarkTotal }
         : null,
+    visit: activity.type === "unlocked" ? await visitDetails(ctx, activity.actorId, activity.landmarkId) : null,
     likeCount: activity.likeCount,
     commentCount: activity.commentCount,
     likedByViewer: like !== null,

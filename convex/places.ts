@@ -4,14 +4,14 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import { destinationValidator, landmarkValidator, toDestination, toLandmark } from "./destinations";
-import { postActivity, removeActivities, UNLOCK_COALESCE_MS } from "./lib/activities";
+import { postActivity, removeActivities } from "./lib/activities";
 import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
 import { getHeader, getRanking } from "./lib/lists";
 import { MIN_LIST_FOR_AVERAGES, scoreForRank } from "./lib/ranking";
 import { scheduleRecompute } from "./lib/recommendations";
 import { areFriends, MAX_FRIENDS } from "./lib/social";
-import { bumpUser, deleteUnlock, deleteVisit, ensureVisit, getVisit } from "./lib/visits";
+import { createUnlock, deleteUnlock, deleteVisit, ensureVisit, getVisit, postUnlock, unlockPhotos } from "./lib/visits";
 import { verification } from "./schema";
 import { toSummary, userSummaryValidator } from "./users";
 
@@ -186,43 +186,10 @@ export const unlockLandmark = mutation({
     const visit = await getVisit(ctx, user._id, landmark.destinationId);
     if (visit === null) fail("INVALID", "Add the place to your visits before unlocking its landmarks.");
     if ((await getUnlock(ctx, user._id, landmark._id)) !== null) return null;
-    await ctx.db.insert("landmarkUnlocks", {
-      userId: user._id,
-      landmarkId: landmark._id,
-      destinationId: landmark.destinationId,
-      verification: "self_reported",
-    });
-    const unlockedCount = visit.unlockCount + 1;
-    await ctx.db.patch("visits", visit._id, { unlockCount: unlockedCount });
-    await bumpUser(ctx, user._id, "unlockCount", 1);
-    if (!(args.post ?? true)) return null;
-
-    const landmarkTotal = (await ctx.db.get("destinations", landmark.destinationId))?.landmarkCount ?? 0;
-    const recent = await ctx.db
-      .query("activities")
-      .withIndex("by_actorId_and_destinationId", (q) =>
-        q.eq("actorId", user._id).eq("destinationId", landmark.destinationId),
-      )
-      .order("desc")
-      .take(20);
-    const current = recent.find(
-      (a) => a.type === "unlocked" && a._creationTime > Date.now() - UNLOCK_COALESCE_MS,
-    );
-    if (current) {
-      await ctx.db.patch("activities", current._id, { landmarkId: landmark._id, unlockedCount, landmarkTotal });
-      return null;
+    const { unlockedCount } = await createUnlock(ctx, visit, landmark);
+    if (args.post ?? true) {
+      await postUnlock(ctx, { actorId: user._id, landmark, unlockedCount, visibility: "friends", standalone: false });
     }
-    await postActivity(ctx, {
-      type: "unlocked",
-      actorId: user._id,
-      destinationId: landmark.destinationId,
-      visibility: "friends",
-      likeCount: 0,
-      commentCount: 0,
-      landmarkId: landmark._id,
-      unlockedCount,
-      landmarkTotal,
-    });
     return null;
   },
 });
@@ -347,6 +314,8 @@ export const landmarkProgress = query({
       unlocked: v.boolean(),
       verification: v.union(verification, v.null()),
       friendsUnlocked: v.number(),
+      photoCount: v.number(),
+      coverUrl: v.union(v.string(), v.null()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -376,11 +345,23 @@ export const landmarkProgress = query({
       }
     }
     const mineById = new Map(mine.map((unlock) => [unlock.landmarkId, unlock]));
-    return landmarks.map((landmark) => ({
-      landmark: toLandmark(landmark),
-      unlocked: mineById.has(landmark._id),
-      verification: mineById.get(landmark._id)?.verification ?? null,
-      friendsUnlocked: friendCounts.get(landmark._id) ?? 0,
-    }));
+    const photos = new Map(
+      await Promise.all(
+        mine.map(async (unlock) => [unlock.landmarkId, await unlockPhotos(ctx, unlock._id)] as const),
+      ),
+    );
+    return await Promise.all(
+      landmarks.map(async (landmark) => {
+        const mineFor = photos.get(landmark._id) ?? [];
+        return {
+          landmark: toLandmark(landmark),
+          unlocked: mineById.has(landmark._id),
+          verification: mineById.get(landmark._id)?.verification ?? null,
+          friendsUnlocked: friendCounts.get(landmark._id) ?? 0,
+          photoCount: mineFor.length,
+          coverUrl: mineFor[0] ? await ctx.storage.getUrl(mineFor[0].storageId) : null,
+        };
+      }),
+    );
   },
 });

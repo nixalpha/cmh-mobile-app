@@ -323,3 +323,98 @@ export function seeListings(text: string): string[] {
   }
   return ids;
 }
+
+export type ImageKind = "image" | "night" | "banner";
+
+export type ImageInfo = {
+  file: string;
+  mime: string;
+  width: number;
+  height: number;
+  thumbUrl: string;
+  thumbWidth: number;
+  thumbHeight: number;
+  pageUrl: string;
+  credit: string;
+  license: string;
+};
+
+export type DestinationImage = {
+  url: string;
+  width: number;
+  height: number;
+  credit: string;
+  license: string;
+  sourceUrl: string;
+};
+
+const PHOTO_MIMES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MIN_PHOTO_WIDTH = 960;
+const MIN_ASPECT = 1.2;
+const MAX_ASPECT = 3;
+const NOT_A_PHOTO =
+  /\b(maps?|locator|location|karte|flag|coat of arms|wappen|seal|logo|satellite|orthophoto|relief|montage|collage|diagram|plan)\b|\bISS\d/i;
+const SATELLITE_CREDIT = /World Wind|NASA|Landsat|Copernicus|Sentinel/i;
+
+/** Wikidata gives Commons files as Special:FilePath URLs; returns the bare file name. */
+export function commonsFileName(value: string): string | null {
+  const marker = "Special:FilePath/";
+  const at = value.indexOf(marker);
+  if (at === -1) return null;
+  try {
+    return decodeURIComponent(value.slice(at + marker.length)).replace(/_/g, " ");
+  } catch {
+    return null;
+  }
+}
+
+/** Commons artist fields are HTML; keep the readable text. */
+export function plainCredit(html: string, maxLength = 80): string {
+  const text = html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
+}
+
+function usable(info: ImageInfo | undefined, banner: boolean): info is ImageInfo {
+  if (!info || !info.thumbUrl || !PHOTO_MIMES.has(info.mime) || info.width < MIN_PHOTO_WIDTH) return false;
+  if (banner) return true;
+  const aspect = info.width / info.height;
+  return aspect >= MIN_ASPECT && aspect <= MAX_ASPECT && !NOT_A_PHOTO.test(info.file) && !SATELLITE_CREDIT.test(info.credit);
+}
+
+/**
+ * Picks the first usable landscape photo. `photos` are tried in order with the full filter; banners are a last
+ * resort because they are very wide and look soft at card height.
+ */
+export function pickImage(
+  photos: string[],
+  banners: string[],
+  info: Map<string, ImageInfo | null>,
+): { image: DestinationImage; source: "photo" | "banner" } | null {
+  for (const [files, banner] of [[photos, false], [banners, true]] as const) {
+    for (const file of files) {
+      const found = info.get(file) ?? undefined;
+      if (!usable(found, banner)) continue;
+      return {
+        source: banner ? "banner" : "photo",
+        image: {
+          url: found.thumbUrl,
+          width: found.thumbWidth,
+          height: found.thumbHeight,
+          credit: found.credit || "Wikimedia Commons",
+          license: found.license,
+          sourceUrl: found.pageUrl,
+        },
+      };
+    }
+  }
+  return null;
+}

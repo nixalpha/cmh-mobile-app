@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
-import { destinationKind } from "./schema";
+import { destinationImage, destinationKind } from "./schema";
 
 const RETIRE_BATCH = 500;
 
@@ -25,6 +25,7 @@ export const upsertDestinations = internalMutation({
         popularity: v.number(),
         tier: v.number(),
         landmarkCount: v.number(),
+        image: v.optional(destinationImage),
       }),
     ),
   },

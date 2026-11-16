@@ -4,7 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { requireUser } from "./lib/auth";
 import { fold } from "./lib/text";
-import { destinationKind } from "./schema";
+import { destinationImage, destinationKind } from "./schema";
 
 const MAX_RESULTS = 20;
 const TIERS = [1, 2, 3];
@@ -20,6 +20,7 @@ export const destinationValidator = v.object({
   lng: v.number(),
   tier: v.number(),
   landmarkCount: v.number(),
+  image: v.union(destinationImage, v.null()),
 });
 
 export const landmarkValidator = v.object({
@@ -44,6 +45,7 @@ export function toDestination(doc: Doc<"destinations">) {
     lng: doc.lng,
     tier: doc.tier,
     landmarkCount: doc.landmarkCount,
+    image: doc.image ?? null,
   };
 }
 

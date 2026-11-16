@@ -1,8 +1,17 @@
 import { useAuthActions } from '@convex-dev/auth/react';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, {
+  interpolateColor,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { FriendManager } from '@/components/friend-manager';
 import { LivePosts, personInitials, personName } from '@/components/live-post';
@@ -15,6 +24,7 @@ import { Chip } from '@/components/ui/chip';
 import { Glass } from '@/components/ui/glass';
 import { Screen } from '@/components/ui/screen';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import { selectionSpring } from '@/components/ui/sliding-indicator';
 import { Text } from '@/components/ui/text';
 import { colors, radius } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
@@ -82,9 +92,9 @@ export default function ProfileScreen() {
               accessibilityState={{ selected: picked === person._id }}
               onPress={() => { setPicked(picked === person._id ? null : person._id); setTab('friends'); }}
               style={styles.friend}>
-              <View style={[styles.ring, picked === person._id && styles.ringOn]}>
+              <FriendRing on={picked === person._id}>
                 <Avatar initials={personInitials(person)} color={colors.canvas} size={52} />
-              </View>
+              </FriendRing>
               <Text variant="caption" weight="semibold" numberOfLines={1}>{personName(person)}</Text>
             </Pressable>
           ))}
@@ -101,6 +111,20 @@ export default function ProfileScreen() {
   return <Screen backdrop="profile"><LivePosts mode={tab} actorId={picked ?? undefined} header={header} /></Screen>;
 }
 
+function FriendRing({ on, children }: { on: boolean; children: ReactNode }) {
+  const progress = useSharedValue(on ? 1 : 0);
+  const scale = useSharedValue(1);
+  useEffect(() => {
+    progress.set(withTiming(on ? 1 : 0, { duration: 180, reduceMotion: ReduceMotion.System }));
+    if (on) scale.set(withSequence(withTiming(0.92, { duration: 90 }), withSpring(1, { ...selectionSpring, damping: 12 })));
+  }, [on, progress, scale]);
+  const ringStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(progress.value, [0, 1], ['rgba(14,17,22,0)', colors.ink]),
+    transform: [{ scale: scale.value }],
+  }));
+  return <Animated.View style={[styles.ring, ringStyle]}>{children}</Animated.View>;
+}
+
 const styles = StyleSheet.create({
   stack: { gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -112,5 +136,4 @@ const styles = StyleSheet.create({
   friendRow: { gap: 14, padding: 2 },
   friend: { width: 72, alignItems: 'center', gap: 6 },
   ring: { padding: 2, borderRadius: 30, borderWidth: 2, borderColor: 'transparent' },
-  ringOn: { borderColor: colors.ink },
 });
