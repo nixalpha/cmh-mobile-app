@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isGlobeSync, landmarkRange, parseGlobeEvent, type GlobeSync } from './globe-bridge';
+import { isGlobeSync, landmarkRange, parseGlobeEvent, SELF_PLACE_ID, selfPlace, type GlobeSync } from './globe-bridge';
 
 const message: GlobeSync = {
   type: 'sync', active: true, focusRevision: 1, selectedId: 'paris',
@@ -33,6 +33,21 @@ describe('cartoon globe bridge', () => {
     for (const place of [{ ...person, markerKind: 'unknown' }, { ...person, accuracy: Infinity },
       { ...person, accuracy: -1 }, { ...person, initials: '123456789' }]) {
       expect(isGlobeSync({ ...message, places: [place] })).toBe(false);
+    }
+  });
+
+  it('builds a self marker the globe accepts from any device reading', () => {
+    const me = selfPlace({ lat: 37.76, lng: -122.39, accuracy: 35 });
+    expect(me).toEqual({ _id: SELF_PLACE_ID, name: 'You', lat: 37.76, lng: -122.39, markerKind: 'self', initials: 'You', accuracy: 35 });
+    // iOS reports null accuracy for some fixes and huge values for coarse ones; neither may poison the sync.
+    expect(selfPlace({ lat: 1, lng: 2, accuracy: null })?.accuracy).toBeUndefined();
+    expect(selfPlace({ lat: 1, lng: 2, accuracy: -1 })?.accuracy).toBeUndefined();
+    expect(selfPlace({ lat: 1, lng: 2, accuracy: 250000 })?.accuracy).toBe(100000);
+    for (const accuracy of [null, -1, 250000, 12]) {
+      expect(isGlobeSync({ ...message, places: [selfPlace({ lat: 1, lng: 2, accuracy })] })).toBe(true);
+    }
+    for (const position of [null, undefined, { lat: NaN, lng: 0 }, { lat: 91, lng: 0 }, { lat: 0, lng: -181 }]) {
+      expect(selfPlace(position)).toBeUndefined();
     }
   });
 

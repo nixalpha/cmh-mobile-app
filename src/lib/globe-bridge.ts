@@ -45,6 +45,22 @@ function isPlace(place: Record<string, unknown> | null) {
     && (place.accuracy === undefined || (typeof place.accuracy === 'number' && Number.isFinite(place.accuracy) && place.accuracy >= 0 && place.accuracy <= 100000));
 }
 
+/** Globe id of the viewer's own marker. Never collides with Convex ids. */
+export const SELF_PLACE_ID = 'me';
+export type DevicePosition = { lat: number; lng: number; accuracy?: number | null };
+
+/**
+ * The viewer's own marker. Returns undefined for a position the bridge would reject,
+ * because one invalid place makes the globe drop the whole sync.
+ */
+export function selfPlace(position: DevicePosition | null | undefined): GlobePlace | undefined {
+  if (!position || !Number.isFinite(position.lat) || !Number.isFinite(position.lng)
+    || Math.abs(position.lat) > 90 || Math.abs(position.lng) > 180) return undefined;
+  const accuracy = typeof position.accuracy === 'number' && Number.isFinite(position.accuracy) && position.accuracy >= 0
+    ? Math.min(position.accuracy, 100000) : undefined;
+  return { _id: SELF_PLACE_ID, name: 'You', lat: position.lat, lng: position.lng, markerKind: 'self', initials: 'You', accuracy };
+}
+
 const EARTH_RADIUS = 6371000;
 /**
  * Camera range (metres) that frames most of a city's landmarks around its centre.

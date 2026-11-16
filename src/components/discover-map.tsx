@@ -12,7 +12,8 @@ import { SegmentedControl, type Segment } from '@/components/ui/segmented-contro
 import { Text } from '@/components/ui/text';
 import { colors, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
-import { MAX_GLOBE_LANDMARKS, type GlobeLandmark, type GlobePlace } from '@/lib/globe-bridge';
+import { MAX_GLOBE_LANDMARKS, SELF_PLACE_ID, selfPlace, type GlobeLandmark, type GlobePlace } from '@/lib/globe-bridge';
+import { useDeviceLocation } from '@/lib/use-device-location';
 
 type SearchMode = 'cities' | 'landmarks';
 type Place = GlobePlace & { _id: Id<'destinations'> };
@@ -27,6 +28,8 @@ const MODES: readonly Segment<SearchMode>[] = [
 const RESULT_LIMIT = 6;
 // Height of the logo / return-to-globe row the search bar sits under.
 const HEADER_ROW = 44;
+// The locate button sits left of the 32 pt zoom-out button.
+const LOCATE_OFFSET = 44;
 
 export function DiscoverMap({ active }: { active: boolean }) {
   const insets = useSafeAreaInsets();
@@ -40,6 +43,8 @@ export function DiscoverMap({ active }: { active: boolean }) {
   const [mode, setMode] = useState<SearchMode>('cities');
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
+  const device = useDeviceLocation(active);
+  const me = useMemo(() => selfPlace(device.position), [device.position]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setSearch(query.trim()), 250);
@@ -62,6 +67,7 @@ export function DiscoverMap({ active }: { active: boolean }) {
     const pins = popular ?? PLACES;
     return found && !pins.some((place) => place._id === found._id) ? [...pins, found] : pins;
   }, [popular, found]);
+  const pins = useMemo<readonly GlobePlace[]>(() => me ? [...places, me] : places, [places, me]);
   const destinationId = places.find((place) => place._id === selectedId)?._id;
   const selected = useQuery(api.destinations.get, destinationId ? { destinationId } : 'skip');
   const landmarks = useMemo<readonly GlobeLandmark[]>(() => {
@@ -76,6 +82,12 @@ export function DiscoverMap({ active }: { active: boolean }) {
     setFoundLandmark(undefined);
     setFocusRevision((revision) => revision + 1);
   }, []);
+  const showMe = useCallback(() => {
+    setFound(undefined);
+    setFoundLandmark(undefined);
+    selectPlace(SELF_PLACE_ID);
+  }, [selectPlace]);
+  const locate = () => me ? showMe() : void device.locate(showMe).catch(() => {});
   const openLandmark = useCallback((landmark: string) => {
     if (destinationId) router.push({ pathname: '/city/[id]', params: { id: destinationId, landmark } });
   }, [destinationId]);
@@ -95,7 +107,7 @@ export function DiscoverMap({ active }: { active: boolean }) {
     <View style={styles.map}>
       <Globe
         active={active}
-        places={places}
+        places={pins}
         selectedId={selectedId}
         landmarks={landmarks}
         selectedLandmarkId={foundLandmark?._id}
@@ -115,6 +127,14 @@ export function DiscoverMap({ active }: { active: boolean }) {
           setZoomOutRevision((revision) => revision + 1);
         }}
         style={[styles.zoomOut, { top, right: insets.right + space.gutter }]}
+      />
+      <IconButton
+        icon="compass"
+        label="Show my location"
+        variant="ink"
+        selected={selectedId === SELF_PLACE_ID}
+        onPress={locate}
+        style={[styles.zoomOut, { top, right: insets.right + space.gutter + LOCATE_OFFSET }]}
       />
       <View pointerEvents="box-none" style={[styles.searchLayer, {
         top: top + HEADER_ROW + space.stack,
