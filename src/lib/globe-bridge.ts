@@ -1,4 +1,4 @@
-export type GlobePlace = { _id: string; name: string; lat: number; lng: number; countryCode?: string };
+export type GlobePlace = { _id: string; name: string; lat: number; lng: number; countryCode?: string; markerKind?: 'self' | 'friend'; initials?: string; accuracy?: number };
 export type GlobeSync = {
   type: 'sync';
   places: readonly GlobePlace[];
@@ -19,10 +19,13 @@ export function isGlobeSync(value: unknown): value is GlobeSync {
   return data.type === 'sync' && typeof data.active === 'boolean' && typeof data.focusRevision === 'number'
     && Number.isFinite(data.focusRevision) && (data.selectedId === undefined || typeof data.selectedId === 'string')
     && (data.zoomOutRevision === undefined || (typeof data.zoomOutRevision === 'number' && Number.isSafeInteger(data.zoomOutRevision) && data.zoomOutRevision >= 0))
-    && Array.isArray(data.places) && data.places.length <= 100
+    && Array.isArray(data.places) && data.places.length <= 1024
     && data.places.every((place: Record<string, unknown>) => place && typeof place._id === 'string' && typeof place.name === 'string'
       && typeof place.lat === 'number' && Number.isFinite(place.lat) && Math.abs(place.lat) <= 90
-      && typeof place.lng === 'number' && Number.isFinite(place.lng) && Math.abs(place.lng) <= 180);
+      && typeof place.lng === 'number' && Number.isFinite(place.lng) && Math.abs(place.lng) <= 180
+      && (place.markerKind === undefined || place.markerKind === 'self' || place.markerKind === 'friend')
+      && (place.initials === undefined || (typeof place.initials === 'string' && place.initials.length <= 8))
+      && (place.accuracy === undefined || (typeof place.accuracy === 'number' && Number.isFinite(place.accuracy) && place.accuracy >= 0 && place.accuracy <= 100000)));
 }
 
 export function parseGlobeEvent(value: unknown): GlobeEvent | null {

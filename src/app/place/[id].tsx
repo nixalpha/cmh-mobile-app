@@ -47,17 +47,13 @@ export default function PlaceScreen() {
           <PlaceArt place={detail.destination} height={200} />
           <PhotoCredit image={detail.destination.image} />
           <Glass style={styles.card}>
-            <Text variant="eyebrow" color="muted">{detail.destination.countryName} · {detail.destination.kind}</Text>
+            <Text variant="eyebrow" color="muted">{detail.destination.countryName}</Text>
             <Text variant="title" accessibilityRole="header">{detail.destination.name}</Text>
-            {detail.destination.admin1 && <Text color="slate">{detail.destination.admin1}</Text>}
-            {detail.viewer.rank !== null && <Text variant="cardTitle">Your #{detail.viewer.rank} of {detail.viewer.listSize}</Text>}
+            {detail.viewer.rank !== null && <Text variant="cardTitle">Your #{detail.viewer.rank}</Text>}
             {detail.friends.visitedCount > 0 && (
               <Text color="slate">{detail.friends.visitedCount} friends have visited</Text>
             )}
-            {detail.friends.averageScore !== null && (
-              <Text variant="caption" color="muted">Friends’ avg: {detail.friends.averageScore.toFixed(1)}</Text>
-            )}
-            {detail.viewer.visit ? <Notice>Visited</Notice> : (
+            {!detail.viewer.visit && (
               <AsyncButton label="I’ve been here" onPress={() => addVisit({ destinationId })} />
             )}
             {detail.viewer.rank === null && (
@@ -66,10 +62,9 @@ export default function PlaceScreen() {
           </Glass>
           <View style={styles.landmarks}>
             <Text variant="title2">Landmarks</Text>
-            <Text color="slate">{detail.viewer.visit?.unlockCount ?? 0} collected · {detail.destination.landmarkCount} in the catalog</Text>
-            <Text variant="caption" color="muted">Mark places you’ve visited by hand. Landmarks are self-reported unless you attach a photo taken there.</Text>
-            {!detail.viewer.visit && <Notice>Add this place to your visits to unlock its landmarks.</Notice>}
-            {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks in this catalog yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, friendsUnlocked, photoCount, coverUrl }) => {
+            <Text color="slate">{detail.viewer.visit?.unlockCount ?? 0}/{detail.destination.landmarkCount} collected</Text>
+            {!detail.viewer.visit && <Notice>Mark this place as visited to add landmarks.</Notice>}
+            {landmarks === undefined ? <Notice>Loading landmarks…</Notice> : landmarks.length === 0 ? <Notice>No landmarks yet.</Notice> : landmarks.map(({ landmark, unlocked, verification, photoCount, coverUrl }) => {
               const openVisit = () => router.push({ pathname: '/landmark-visit/[id]', params: { id: landmark._id } });
               return (
                 <Glass key={landmark._id} style={styles.card}>
@@ -79,21 +74,21 @@ export default function PlaceScreen() {
                     )}
                     <View style={styles.landmarkCopy}>
                       <Text variant="cardTitle">{landmark.name}</Text>
-                      <Text variant="caption" color="muted">{landmark.category}</Text>
-                      <Text color="slate">
-                        {unlocked ? (verification === 'photo' ? 'Collected · photo-verified' : 'Collected') : 'Not collected'}
-                        {photoCount > 0 ? ` · ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : ''}
-                      </Text>
+                      {unlocked && (
+                        <Text variant="caption" color="muted">
+                          {verification === 'photo' ? 'Collected · photo-verified' : 'Collected'}
+                          {photoCount > 0 ? ` · ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : ''}
+                        </Text>
+                      )}
                     </View>
                   </View>
-                  {friendsUnlocked > 0 && <Text variant="caption" color="muted">{friendsUnlocked} friends collected this</Text>}
                   {detail.viewer.visit && (unlocked ? (
                     <>
                       <Button label="Edit visit" variant="secondary" onPress={openVisit} />
-                      <AsyncButton label="Mark as not visited" variant="link" onPress={() => lock({ landmarkId: landmark._id })} />
+                      <AsyncButton label="Remove visit" variant="link" onPress={() => lock({ landmarkId: landmark._id })} />
                     </>
                   ) : (
-                    <Button label="I visited this landmark" variant="secondary" onPress={openVisit} />
+                    <Button label="Add visit" variant="secondary" onPress={openVisit} />
                   ))}
                 </Glass>
               );

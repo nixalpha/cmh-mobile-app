@@ -7,6 +7,7 @@ import { mutation, query, type MutationCtx } from "./_generated/server";
 import { notify } from "./lib/activities";
 import { requireUser } from "./lib/auth";
 import { fail } from "./lib/errors";
+import { clearLocationShares } from "./lib/friendLocations";
 import { invalidateRecommendations } from "./lib/recommendations";
 import {
   areFriends,
@@ -37,6 +38,7 @@ async function unfriendPair(ctx: MutationCtx, a: Doc<"users">, bId: Id<"users">)
     getFriendship(ctx, a._id, bId),
     getFriendship(ctx, bId, a._id),
   ]);
+  await clearLocationShares(ctx, a._id, bId);
   if (ab === null || ba === null) return false;
   const b = await ctx.db.get("users", bId);
   await ctx.db.delete("friendships", ab._id);

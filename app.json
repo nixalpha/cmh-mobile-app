@@ -6,7 +6,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["travi", "cmhmobileapp"],
+    "scheme": [
+      "travi",
+      "cmhmobileapp"
+    ],
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon",
@@ -42,9 +45,35 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Wayfarer uses your photos so you can attach them to the landmarks you visit.",
+          "photosPermission": "Travi uses photo locations to match landmarks and automatically upload new matching photos when you enable automatic collection. You can also attach photos manually.",
           "cameraPermission": false,
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Travi uses your location to detect landmark visits and show you on the globe. Location sharing is only with friends you choose.",
+          "locationAlwaysAndWhenInUsePermission": "Travi uses your location in the background for friend sharing and automatic landmark collection, only when you enable these features.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Travi uses photo locations to match landmarks and automatically upload new matching photos when you enable automatic collection. You can also attach photos manually.",
+          "savePhotosPermission": false,
+          "granularPermissions": [
+            "photo"
+          ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#909DC3"
         }
       ]
     ],

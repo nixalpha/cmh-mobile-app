@@ -81,6 +81,7 @@ export default defineSchema({
   })
     .index("by_wikidataId", ["wikidataId"])
     .index("by_destinationId_and_status_and_order", ["destinationId", "status", "order"])
+    .index("by_status_and_lat", ["status", "lat"])
     .index("by_status_and_importedAt", ["status", "importedAt"])
     .searchIndex("search_searchText", {
       searchField: "searchText",
@@ -283,4 +284,67 @@ export default defineSchema({
     blockerId: v.id("users"),
     blockedId: v.id("users"),
   }).index("by_blockerId_and_blockedId", ["blockerId", "blockedId"]),
+
+  autoVisitDevices: defineTable({
+    userId: v.id("users"),
+    secret: v.string(),
+    enabledAt: v.number(),
+    photos: v.boolean(),
+    candidate: v.optional(v.object({ landmarkId: v.id("landmarks"), since: v.number(), lastAt: v.number() })),
+  })
+    .index("by_secret", ["secret"])
+    .index("by_userId", ["userId"]),
+
+  autoPhotoReceipts: defineTable({
+    userId: v.id("users"),
+    assetKey: v.string(),
+  }).index("by_userId_and_assetKey", ["userId", "assetKey"]),
+
+  locationSettings: defineTable({
+    userId: v.id("users"),
+    enabled: v.boolean(),
+    nearbyAlerts: v.boolean(),
+    cityAlerts: v.boolean(),
+    visitingDestinationId: v.optional(v.id("destinations")),
+  }).index("by_userId", ["userId"]),
+
+  friendLocations: defineTable({
+    userId: v.id("users"),
+    lat: v.number(),
+    lng: v.number(),
+    accuracy: v.number(),
+    city: v.optional(v.string()),
+    countryCode: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  locationShares: defineTable({
+    userId: v.id("users"),
+    friendId: v.id("users"),
+  }).index("by_userId_and_friendId", ["userId", "friendId"]),
+
+  locationAlerts: defineTable({
+    userId: v.id("users"),
+    actorId: v.id("users"),
+    kind: v.union(v.literal("nearby"), v.literal("city")),
+    destinationId: v.optional(v.id("destinations")),
+    eventTime: v.number(),
+    read: v.boolean(),
+  })
+    .index("by_userId_and_eventTime", ["userId", "eventTime"])
+    .index("by_userId_and_actorId_and_kind", ["userId", "actorId", "kind"]),
+
+  locationPushTokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+  })
+    .index("by_token", ["token"])
+    .index("by_userId", ["userId"]),
+
+  locationDevices: defineTable({
+    userId: v.id("users"),
+    secret: v.string(),
+  })
+    .index("by_secret", ["secret"])
+    .index("by_userId", ["userId"]),
 });

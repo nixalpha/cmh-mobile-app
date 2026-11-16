@@ -20,7 +20,17 @@ describe('cartoon globe bridge', () => {
       { ...message, zoomOutRevision: 1.5 }, { ...message, zoomOutRevision: '1' },
       { ...message, places: [{ ...message.places[0], lat: NaN }] },
       { ...message, places: [{ ...message.places[0], lng: 181 }] },
-      { ...message, places: Array(101).fill(message.places[0]) }]) expect(isGlobeSync(data)).toBe(false);
+      { ...message, places: Array(1025).fill(message.places[0]) }]) expect(isGlobeSync(data)).toBe(false);
+  });
+
+  it('accepts person markers and rejects malformed location metadata', () => {
+    const person = { ...message.places[0], markerKind: 'friend', initials: 'AL', accuracy: 30 };
+    expect(isGlobeSync({ ...message, places: [person] })).toBe(true);
+    expect(isGlobeSync({ ...message, places: [{ ...person, markerKind: 'self', initials: 'You' }] })).toBe(true);
+    for (const place of [{ ...person, markerKind: 'unknown' }, { ...person, accuracy: Infinity },
+      { ...person, accuracy: -1 }, { ...person, initials: '123456789' }]) {
+      expect(isGlobeSync({ ...message, places: [place] })).toBe(false);
+    }
   });
 
   it('decodes native JSON messages and browser message objects', () => {

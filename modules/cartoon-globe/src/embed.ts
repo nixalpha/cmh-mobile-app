@@ -51,6 +51,7 @@ try {
   scope.receiveGlobeMessage = (data) => {
     if (!isGlobeSync(data) || disposed || !globe) return;
     places = data.places;
+    const previousSelectedId = selectedId;
     selectedId = data.selectedId;
     const ids = new Set(places.map((place) => place._id));
     for (const [id, button] of buttons) if (!ids.has(id)) { button.remove(); buttons.delete(id); }
@@ -65,13 +66,16 @@ try {
         buttons.set(place._id, button);
         markers.append(button);
       }
-      button.setAttribute('aria-label', `Explore ${place.name}`);
+      button.classList.toggle('friend', place.markerKind === 'friend');
+      button.classList.toggle('self', place.markerKind === 'self');
+      button.querySelector('.town')!.textContent = place.markerKind === 'self' ? '●' : place.markerKind === 'friend' ? place.initials ?? '●' : '▥';
+      button.setAttribute('aria-label', `${place.markerKind ? 'Locate' : 'Explore'} ${place.name}`);
       button.setAttribute('aria-pressed', String(place._id === selectedId));
       button.querySelector('.name')!.textContent = place.name;
     }
     const selected = places.find((place) => place._id === selectedId);
-    if (selected && data.focusRevision !== focusRevision) {
-      globe.controls.flyTo({ lat: selected.lat, lon: selected.lng, range: 1800, heading: 0, tilt: 50 },
+    if (selected && (data.focusRevision !== focusRevision || selectedId !== previousSelectedId)) {
+      globe.controls.flyTo({ lat: selected.lat, lon: selected.lng, range: selected.markerKind ? Math.max(5000, (selected.accuracy ?? 0) * 6) : 1800, heading: 0, tilt: selected.markerKind ? 0 : 50 },
         window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.01 : undefined, 'cinematic');
     }
     focusRevision = data.focusRevision;

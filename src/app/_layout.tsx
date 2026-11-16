@@ -12,6 +12,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useConvexAuth, useQuery } from 'convex/react';
 
+import { FriendLocationBanner } from '@/components/friend-location-banner';
+import { FriendLocationProvider } from '@/components/friend-location-provider';
+import { AutoCollectionRunner } from '@/components/auto-collection';
 import { BackendProvider } from '@/components/backend-provider';
 import { AsyncButton, Notice } from '@/components/live-ui';
 import { Screen } from '@/components/ui/screen';
@@ -77,8 +80,10 @@ export default function RootLayout() {
 function SessionRoutes() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const me = useQuery(api.users.me, isAuthenticated ? {} : 'skip');
-  if (isLoading) return <Screen><Notice>Opening travi…</Notice></Screen>;
+  if (isLoading || (isAuthenticated && me === undefined)) return <Screen><Notice>Opening travi…</Notice></Screen>;
   return (
+    <AuthenticatedLocationProvider enabled={isAuthenticated && !!me?.handle}>
+    <AutoCollectionRunner userId={isAuthenticated ? me?._id : null} />
     <Stack screenOptions={{ title: 'travi', headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="auth" />
@@ -87,6 +92,7 @@ function SessionRoutes() {
       </Stack.Protected>
       <Stack.Protected guard={isAuthenticated && (me === undefined || !!me?.handle)} redirectTo="/auth">
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="friends" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="place/[id]" />
         <Stack.Screen name="city/[id]" />
@@ -94,5 +100,10 @@ function SessionRoutes() {
         <Stack.Screen name="landmark-visit/[id]" options={{ presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
+    </AuthenticatedLocationProvider>
   );
+}
+
+function AuthenticatedLocationProvider({ enabled, children }: { enabled: boolean; children: import('react').ReactNode }) {
+  return enabled ? <FriendLocationProvider>{children}<FriendLocationBanner /></FriendLocationProvider> : children;
 }

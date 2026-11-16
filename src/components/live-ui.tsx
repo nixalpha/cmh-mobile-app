@@ -22,18 +22,19 @@ export function Notice({ children }: { children: ReactNode }) {
   return <Text variant="bodySmall" color="muted" accessibilityLiveRegion="polite">{children}</Text>;
 }
 
-export function AsyncButton({ label, onPress, variant = 'primary', disabled = false }: {
+export function AsyncButton({ label, onPress, variant = 'primary', disabled = false, height }: {
   label: string;
   onPress: () => Promise<unknown>;
   variant?: 'primary' | 'secondary' | 'link';
   disabled?: boolean;
+  height?: number;
 }) {
   const locked = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   return (
     <View style={styles.action}>
-      <Button label={pending ? 'Working…' : label} variant={variant} disabled={disabled || pending} onPress={async () => {
+      <Button label={pending ? 'Working…' : label} variant={variant} height={height} disabled={disabled || pending} onPress={async () => {
         if (locked.current) return;
         locked.current = true;
         setPending(true);
