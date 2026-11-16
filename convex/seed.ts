@@ -10,8 +10,8 @@ import { notify, postActivity } from "./lib/activities";
 import { fail } from "./lib/errors";
 import { scoreForRank } from "./lib/ranking";
 import { invalidateRecommendations, scheduleRecompute } from "./lib/recommendations";
-import { locationFor } from "./lib/friendLocations";
-import { areFriends } from "./lib/social";
+import { locationFor, shareFor } from "./lib/friendLocations";
+import { areFriends, getRequest } from "./lib/social";
 import { createUnlock, deleteVisit, ensureVisit, getVisit } from "./lib/visits";
 
 const PEOPLE = [
@@ -138,7 +138,7 @@ const photoJob = v.object({
 
 export const mockUsers = internalMutation({
   args: { target: v.string() },
-  returns: v.object({ created: v.array(v.string()), photos: v.array(photoJob) }),
+  returns: v.object({ created: v.array(v.string()), linked: v.array(v.string()), photos: v.array(photoJob) }),
   handler: async (ctx, args) => {
     const target = await targetUser(ctx, args.target);
     const pool = await destinationPool(ctx);
@@ -146,14 +146,23 @@ export const mockUsers = internalMutation({
     const thisYear = new Date(now).getUTCFullYear();
     const thisMonth = new Date(now).getUTCMonth() + 1;
 
-    const people: { id: Id<"users">; rand: Rand; friend: boolean }[] = [];
+    // Mock users that already exist (seeded for another account) are linked to this target
+    // without generating their history again.
+    const people: { id: Id<"users">; rand: Rand; friend: boolean; isNew: boolean }[] = [];
+    const linked: string[] = [];
     const created: string[] = [];
     for (const [i, person] of PEOPLE.entries()) {
       const taken = await ctx.db
         .query("users")
         .withIndex("by_handle", (q) => q.eq("handle", person.handle))
         .unique();
-      if (taken !== null) continue;
+      const friend = i < PEOPLE.length - PENDING;
+      if (taken !== null) {
+        if (taken._id === target._id) continue;
+        linked.push(person.handle);
+        people.push({ id: taken._id, rand: rng(person.handle), friend, isNew: false });
+        continue;
+      }
       const id = await ctx.db.insert("users", {
         handle: person.handle,
         displayName: person.name,
@@ -163,15 +172,18 @@ export const mockUsers = internalMutation({
         onboardedAt: now,
       });
       created.push(person.handle);
-      people.push({ id, rand: rng(person.handle), friend: i < PEOPLE.length - PENDING });
+      people.push({ id, rand: rng(person.handle), friend, isNew: true });
     }
-    if (people.length === 0) return { created, photos: [] };
+    if (people.length === 0) return { created, linked, photos: [] };
 
     // Friends with the target, plus a ring of friendships between mock users for mutuals.
     for (const [i, person] of people.entries()) {
       if (person.friend) {
         await befriend(ctx, target._id, person.id);
-      } else {
+      } else if (
+        !(await areFriends(ctx, person.id, target._id)) &&
+        (await getRequest(ctx, person.id, target._id)) === null
+      ) {
         await ctx.db.insert("friendRequests", { fromId: person.id, toId: target._id });
         await notify(ctx, { userId: target._id, actorId: person.id, type: "friend_request" });
       }
@@ -187,6 +199,12 @@ export const mockUsers = internalMutation({
 
     for (const person of people) {
       const { id: userId, rand } = person;
+      if (!person.isNew) {
+        if (person.friend && (await shareFor(ctx, userId, target._id)) === null) {
+          await ctx.db.insert("locationShares", { userId, friendId: target._id });
+        }
+        continue;
+      }
       const trips = sample(rand, pool, between(rand, 5, 9));
 
       for (const destination of trips) {
@@ -341,8 +359,9 @@ export const mockUsers = internalMutation({
     }
 
     await invalidateRecommendations(ctx, target._id);
-    await ctx.scheduler.runAfter(REFRESH_MS, internal.seed.refreshLocations, {});
-    return { created, photos };
+    // Only start the refresh chain once; linking to another target reuses the running one.
+    if (created.length > 0) await ctx.scheduler.runAfter(REFRESH_MS, internal.seed.refreshLocations, {});
+    return { created, linked, photos };
   },
 });
 
@@ -392,9 +411,17 @@ export const attachPhoto = internalMutation({
 
 export const run = internalAction({
   args: { target: v.string() },
-  returns: v.object({ created: v.array(v.string()), photos: v.number(), photoFailures: v.number() }),
-  handler: async (ctx, args): Promise<{ created: string[]; photos: number; photoFailures: number }> => {
-    const { created, photos }: { created: string[]; photos: (typeof photoJob.type)[] } =
+  returns: v.object({
+    created: v.array(v.string()),
+    linked: v.array(v.string()),
+    photos: v.number(),
+    photoFailures: v.number(),
+  }),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ created: string[]; linked: string[]; photos: number; photoFailures: number }> => {
+    const { created, linked, photos }: { created: string[]; linked: string[]; photos: (typeof photoJob.type)[] } =
       await ctx.runMutation(internal.seed.mockUsers, args);
     let stored = 0;
     for (const job of photos) {
@@ -408,7 +435,7 @@ export const run = internalAction({
         // A missing photo just leaves the post text-only.
       }
     }
-    return { created, photos: stored, photoFailures: photos.length - stored };
+    return { created, linked, photos: stored, photoFailures: photos.length - stored };
   },
 });
 
