@@ -88,11 +88,47 @@ export const createUser = internalMutation({
 
 export const me = query({
   args: {},
-  returns: v.union(profileValidator, v.null()),
+  returns: v.union(profileValidator.extend({ hasPhone: v.boolean() }), v.null()),
   handler: async (ctx) => {
     const user = await getUser(ctx);
     if (user === null) return null;
-    return await toProfile(ctx, user._id, user);
+    return { ...(await toProfile(ctx, user._id, user)), hasPhone: user.phoneKey !== undefined };
+  },
+});
+
+const PHONE_KEY = /^[a-f0-9]{64}$/;
+const MAX_CONTACT_KEYS = 500;
+
+export const setPhoneKey = mutation({
+  args: { phoneKey: v.union(v.string(), v.null()) },
+  returns: v.null(),
+  handler: async (ctx, { phoneKey }) => {
+    const user = await requireUser(ctx);
+    if (phoneKey !== null && !PHONE_KEY.test(phoneKey)) fail("INVALID", "Enter a valid phone number.");
+    await ctx.db.patch("users", user._id, { phoneKey: phoneKey ?? undefined });
+    return null;
+  },
+});
+
+export const matchContacts = query({
+  args: { phoneKeys: v.array(v.string()) },
+  returns: v.array(profileValidator.extend({ phoneKey: v.string() })),
+  handler: async (ctx, { phoneKeys }) => {
+    const viewer = await requireUser(ctx);
+    if (phoneKeys.length > MAX_CONTACT_KEYS) fail("INVALID", `Send at most ${MAX_CONTACT_KEYS} contacts at a time.`);
+    const results = [];
+    const seen = new Set<Id<"users">>();
+    for (const phoneKey of new Set(phoneKeys)) {
+      if (!PHONE_KEY.test(phoneKey)) continue;
+      const users = await ctx.db.query("users").withIndex("by_phoneKey", (q) => q.eq("phoneKey", phoneKey)).take(3);
+      for (const user of users) {
+        if (user._id === viewer._id || seen.has(user._id)) continue;
+        if (await isBlockedEitherWay(ctx, viewer._id, user._id)) continue;
+        seen.add(user._id);
+        results.push({ ...(await toProfile(ctx, viewer._id, user)), phoneKey });
+      }
+    }
+    return results;
   },
 });
 

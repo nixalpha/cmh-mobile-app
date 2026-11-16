@@ -114,3 +114,16 @@ test("blocking ends the friendship and hides each person from the other", async 
   await alice.as.mutation(api.friends.unblock, { userId: bob.id });
   expect(await bob.as.query(api.users.profile, { userId: alice.id })).toMatchObject({ relationship: "none" });
 });
+
+test('contacts match accounts by hashed phone key', async () => {
+  const t = setup();
+  const alice = await signUp(t, 'alice');
+  const bob = await signUp(t, 'bob');
+  const key = 'a'.repeat(64);
+  await bob.as.mutation(api.users.setPhoneKey, { phoneKey: key });
+  await expect(bob.as.mutation(api.users.setPhoneKey, { phoneKey: '4155550134' })).rejects.toThrow(/INVALID/);
+  expect(await bob.as.query(api.users.me, {})).toMatchObject({ hasPhone: true });
+  const matches = await alice.as.query(api.users.matchContacts, { phoneKeys: [key, 'b'.repeat(64), 'junk'] });
+  expect(matches).toMatchObject([{ _id: bob.id, phoneKey: key, relationship: 'none' }]);
+  expect(await bob.as.query(api.users.matchContacts, { phoneKeys: [key] })).toEqual([]);
+});

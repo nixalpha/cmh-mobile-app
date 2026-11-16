@@ -2,6 +2,7 @@ import { useMutation, usePaginatedQuery, useQuery } from 'convex/react';
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
+import { ContactFinder } from '@/components/contact-finder';
 import { personName } from '@/components/live-post';
 import { AsyncButton, AsyncIconButton, Notice } from '@/components/live-ui';
 import { Glass } from '@/components/ui/glass';
@@ -39,24 +40,23 @@ export function FriendManager() {
       <IconButton icon="search" label="Search people" onPress={() => setSearch(text.trim())} />
       </View>
       {!!error && <Notice>{error}</Notice>}
-      {!!search && people === undefined && <Notice>Searching people…</Notice>}
-      {!!search && people?.length === 0 && <Notice>No people found. Try another name or handle.</Notice>}
+      {!!search && people === undefined && <Notice>Searching…</Notice>}
+      {!!search && people?.length === 0 && <Notice>No one found.</Notice>}
       {people?.map((person) => (
         <View key={person._id} style={styles.person}>
           <View style={styles.personCopy}>
             <Text variant="label">{personName(person)}</Text>
             {person.handle && <Text variant="caption" color="muted">@{person.handle}</Text>}
             {person.relationship !== 'none' && <Text variant="meta" color="muted">{person.relationship === 'friends' ? 'Friends'
-              : person.relationship === 'outgoing' ? 'Request sent' : 'Incoming request · respond below'}</Text>}
+              : person.relationship === 'outgoing' ? 'Request sent' : 'Wants to add you'}</Text>}
           </View>
           {person.relationship === 'none' && (
             <AsyncIconButton icon="userPlus" label={`Add ${personName(person)}`} onError={setError} onPress={run(() => send({ userId: person._id }))} />
           )}
         </View>
       ))}
-      <Text variant="subheading">Incoming requests</Text>
-      {incoming.status === 'LoadingFirstPage' && <Notice>Loading requests…</Notice>}
-      {incoming.status !== 'LoadingFirstPage' && incoming.results.length === 0 && <Notice>No incoming requests.</Notice>}
+      <ContactFinder onError={setError} />
+      {incoming.results.length > 0 && <Text variant="subheading">Requests</Text>}
       {incoming.results.map((request) => (
         <View key={request._id} style={styles.person}>
           <Text variant="label" style={styles.personCopy}>{personName(request.user)}</Text>

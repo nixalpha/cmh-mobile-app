@@ -105,8 +105,11 @@ export default defineSchema({
     visitCount: v.optional(v.number()),
     unlockCount: v.optional(v.number()),
     countryCount: v.optional(v.number()),
+    // SHA-256 of the last 10 phone digits, so contacts can find this account.
+    phoneKey: v.optional(v.string()),
   })
     .index("by_handle", ["handle"])
+    .index("by_phoneKey", ["phoneKey"])
     .searchIndex("search_searchText", { searchField: "searchText" }),
 
   visits: defineTable({
