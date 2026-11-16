@@ -34,7 +34,7 @@ export default function ProfileScreen() {
       {me === undefined ? <Notice>Loading your profile…</Notice> : me === null ? <Notice>Sign in to see your profile.</Notice> : (
         <Glass radius={radius.hero} style={styles.card}>
           <View style={styles.identity}>
-            <Avatar initials={personInitials(me)} color={colors.canvas} size={72} ring={3} />
+            <Avatar initials={personInitials(me)} color={colors.canvas} size={72} ring={3} style={styles.photo} />
             <View style={styles.identityCopy}>
               <Text variant="title2" accessibilityRole="header">{personName(me)}</Text>
               {me.bio && <Text variant="meta" color="muted">{me.bio}</Text>}
@@ -104,6 +104,7 @@ const styles = StyleSheet.create({
   stack: { gap: space.stack },
   card: { padding: space.inset, gap: space.inset },
   identity: { flexDirection: 'row', alignItems: 'center', gap: space.inset },
+  photo: { borderRadius: radius.hero },
   identityCopy: { flex: 1, gap: space.inline },
   stats: { flexDirection: 'row', gap: space.stack },
   rankings: { gap: space.stack },
