@@ -1,7 +1,6 @@
 import { usePaginatedQuery, useQuery } from 'convex/react';
-import { router } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { FriendManager } from '@/components/friend-manager';
 import { LivePosts, personInitials, personName } from '@/components/live-post';
@@ -9,7 +8,7 @@ import { Notice } from '@/components/live-ui';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { colors, radius } from '@/constants/theme';
+import { colors, radius, space } from '@/constants/theme';
 import { api, type Id } from '@/lib/backend';
 
 export function FriendsPosts({ initialActorId }: {
@@ -17,7 +16,6 @@ export function FriendsPosts({ initialActorId }: {
 }) {
   const friends = usePaginatedQuery(api.friends.list, {}, { initialNumItems: 30 });
   const [picked, setPicked] = useState(initialActorId);
-  const [manage, setManage] = useState(false);
   const loadedFriend = friends.results.find(person => person._id === picked);
   const profile = useQuery(api.users.profile, picked && !loadedFriend ? { userId: picked } : 'skip');
   const friend = loadedFriend ?? (profile?.relationship === 'friends' ? profile : undefined);
@@ -25,15 +23,19 @@ export function FriendsPosts({ initialActorId }: {
   const loading = friends.status === 'LoadingFirstPage';
   const empty = !loading && friends.results.length === 0;
 
+  if (loading) return <Notice>Loading friends…</Notice>;
+  // No friends yet: there are no posts to show, so go straight to finding people.
+  if (empty) return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
+    contentContainerStyle={styles.find}>
+    <FriendManager />
+  </ScrollView>;
+
   return <LivePosts mode="friends" actorId={actorId}
     emptyMessage={friend ? `No shared posts from ${personName(friend)} yet.`
-      : empty ? 'Add a friend to see their latest posts here.'
-        : 'No posts from friends yet. Their shared rankings, saves, and visits will appear here.'}
+      : 'No posts from friends yet. Their shared rankings, saves, and visits will appear here.'}
     header={<View style={styles.header}>
       <Text variant="subheading" accessibilityRole="header">{friend ? `${personName(friend)}’s posts` : 'Latest posts'}</Text>
-      <Notice>From your Find My friends · Latest first</Notice>
-      <Button label="Find my friends" icon="globe" variant="secondary" height={44} onPress={() => router.push('/friends')} />
-      {!empty && <View style={styles.row}>
+      <View style={styles.row}>
         <Pressable accessibilityRole="button" accessibilityLabel="Show posts from all friends"
           accessibilityState={{ selected: !actorId }} onPress={() => setPicked(undefined)}
           style={[styles.filter, !actorId && styles.selected]}>
@@ -50,17 +52,14 @@ export function FriendsPosts({ initialActorId }: {
           ListFooterComponent={friends.status === 'CanLoadMore' ? <Button label="More friends" variant="link" height={44} onPress={() => friends.loadMore(30)} />
             : friends.status === 'LoadingMore' ? <Notice>Loading friends…</Notice> : undefined}
         />
-      </View>}
-      {loading && <Notice>Loading friends…</Notice>}
-      <Button label={manage ? 'Close friend manager' : empty ? 'Find friends' : 'Manage friends'} variant="link" height={44}
-        onPress={() => setManage(value => !value)} />
-      {manage && <FriendManager />}
+      </View>
     </View>}
   />;
 }
 
 const styles = StyleSheet.create({
   header: { gap: 12, paddingTop: 8 },
+  find: { paddingTop: 8, paddingBottom: space.scrollBottom },
   row: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   friends: { flex: 1 },
   filters: { gap: 8 },
