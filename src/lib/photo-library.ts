@@ -8,6 +8,8 @@ import { preparePhoto, uploadPhoto } from '@/lib/photo-upload';
 
 export type LibraryPhoto = { id: string; uri: string; width: number; height: number; lat: number; lng: number; takenAt: number };
 export type Near = { lat: number; lng: number; radiusKm: number };
+/** Reported after each page: photos read so far, how many kept, and every photo URI on the page. */
+export type PhotoPage = { checked: number; located: number; uris: string[] };
 
 // iOS returns GPS with every page of assets. Android reads EXIF per photo, which is ~5x
 // slower, so it reads fewer photos.
@@ -20,7 +22,7 @@ export const photoLibrarySupported = Platform.OS === 'ios' || Platform.OS === 'a
  * Reads geotagged photos from the camera roll, newest first. With `near`, keeps only photos
  * taken within that radius. Returns null when photo access is denied. Nothing is uploaded.
  */
-export async function readLocatedPhotos(options: { near?: Near; limit?: number; budgetMs?: number } = {}): Promise<LibraryPhoto[] | null> {
+export async function readLocatedPhotos(options: { near?: Near; limit?: number; budgetMs?: number; onPage?: (page: PhotoPage) => void } = {}): Promise<LibraryPhoto[] | null> {
   const permission = await MediaLibrary.requestPermissionsAsync(false, ['photo']);
   if (!permission.granted) return null;
   const deadline = Date.now() + (options.budgetMs ?? 20000);
@@ -45,6 +47,7 @@ export async function readLocatedPhotos(options: { near?: Near; limit?: number; 
       if (photos.length >= limit) break;
     }
     read += page.assets.length;
+    options.onPage?.({ checked: read, located: photos.length, uris: page.assets.map((asset) => asset.uri) });
     if (!page.hasNextPage) break;
     after = page.endCursor;
   }

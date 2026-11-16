@@ -1,26 +1,33 @@
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
 
-import { readLocatedPhotos } from '@/lib/photo-library';
+import { readLocatedPhotos, type PhotoPage } from '@/lib/photo-library';
 import { photoSpots, type PhotoSpot } from '@/lib/photo-places';
 
 export type ScannedSpot = PhotoSpot & { city?: string; countryCode?: string };
 export type ScanResult = { status: 'denied' } | { status: 'done'; photos: number; spots: ScannedSpot[] };
 /** Sent after each page of the camera roll. `uris` is a small sample for the on-screen preview. */
-export type ScanProgress = { checked: number; located: number; uris: string[] };
+export type ScanProgress = PhotoPage;
 
 const MAX_SPOTS = 30;
 const TIME_BUDGET_MS = 20000;
-// Thumbnails passed to the preview per page. Photos with a location go first.
+// Thumbnails passed to the preview per page.
 const PREVIEW_PER_PAGE = 24;
 const GEOCODE_BUDGET_MS = 15000;
 
 export const photoScanSupported = Platform.OS === 'ios' || Platform.OS === 'android';
 
 /** Reads photo locations from the camera roll and groups them into places. Nothing is uploaded. */
-export async function scanPhotos(onProgress?: (progress: ScanProgress) => void): Promise<ScanResult> {
-  const photos = await readLocatedPhotos({ budgetMs: TIME_BUDGET_MS });
+export async function scanPhotos(
+  onProgress?: (progress: ScanProgress) => void,
+  onRead?: () => void,
+): Promise<ScanResult> {
+  const photos = await readLocatedPhotos({
+    budgetMs: TIME_BUDGET_MS,
+    onPage: onProgress && ((page) => onProgress({ ...page, uris: sample(page.uris, PREVIEW_PER_PAGE) })),
+  });
   if (photos === null) return { status: 'denied' };
+  onRead?.();
   const geocodeUntil = Date.now() + GEOCODE_BUDGET_MS;
 
   const spots: ScannedSpot[] = photoSpots(photos, MAX_SPOTS);

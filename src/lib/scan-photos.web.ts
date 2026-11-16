@@ -1,7 +1,7 @@
-import type { ScanResult } from './scan-photos';
+import type { ScanProgress, ScanResult } from './scan-photos';
 
-export type { ScannedSpot, ScanResult } from './scan-photos';
+export type { ScannedSpot, ScanProgress, ScanResult } from './scan-photos';
 export const photoScanSupported = false;
-export async function scanPhotos(): Promise<ScanResult> {
+export async function scanPhotos(_onProgress?: (progress: ScanProgress) => void, _onRead?: () => void): Promise<ScanResult> {
   return { status: 'denied' };
 }

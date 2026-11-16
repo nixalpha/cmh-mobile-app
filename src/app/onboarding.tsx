@@ -4,18 +4,22 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AsyncButton, errorMessage, Notice } from '@/components/live-ui';
+import { PhotoScan, type PhotoScanStep } from '@/components/photo-scan';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
+import { Loading } from '@/components/ui/loading';
 import { Screen } from '@/components/ui/screen';
 import { SearchField } from '@/components/ui/search-field';
 import { Text } from '@/components/ui/text';
 import { api, type Id } from '@/lib/backend';
 import { placeLabel } from '@/lib/photo-places';
-import { photoScanSupported, scanPhotos } from '@/lib/scan-photos';
+import { photoScanSupported, scanPhotos, type ScanProgress } from '@/lib/scan-photos';
 import { space } from '@/constants/theme';
 
 const MAX_PLACES = 30;
 const BUTTON_HEIGHT = 44;
+// Thumbnails kept for the scan animation. Older ones drop off once this is reached.
+const PREVIEW_POOL = 240;
 
 type Place = { id: Id<'destinations'>; name: string; countryCode: string; takenAt?: number };
 export default function OnboardingScreen() {
@@ -27,12 +31,21 @@ export default function OnboardingScreen() {
   const [found, setFound] = useState<Place[]>([]);
   const [selected, setSelected] = useState<Place[]>([]);
   const [notice, setNotice] = useState('');
+  const [preview, setPreview] = useState<string[]>([]);
+  const [checked, setChecked] = useState(0);
+  const [step, setStep] = useState<PhotoScanStep>('photos');
 
   // Reads where the camera roll's photos were taken as soon as onboarding opens.
   useEffect(() => {
     if (!scan) return;
     let cancelled = false;
-    void findPhotoPlaces(client).then((places) => {
+    const onProgress = (progress: ScanProgress) => {
+      if (cancelled) return;
+      setChecked(progress.checked);
+      setPreview((current) => [...current, ...progress.uris].slice(-PREVIEW_POOL));
+    };
+    const onMatching = () => { if (!cancelled) setStep('places'); };
+    void findPhotoPlaces(client, onProgress, onMatching).then((places) => {
       if (cancelled) return;
       if (places === null) setNotice('Allow photo access to fill this in from your photos.');
       else { setFound(places); setSelected(places); }
@@ -46,7 +59,7 @@ export default function OnboardingScreen() {
       <Screen backdrop="onboarding" style={styles.fill}>
         <View style={styles.center}>
           <Text variant="title" style={styles.centerText} accessibilityRole="header">Where have you been?</Text>
-          <Text color="muted" style={styles.centerText}>Checking your photos…</Text>
+          <PhotoScan uris={preview} checked={checked} step={step} />
         </View>
       </Screen>
     );
@@ -55,8 +68,12 @@ export default function OnboardingScreen() {
 }
 
 // Looks up each photo spot's city. Places already on the account are left out.
-async function findPhotoPlaces(client: ReturnType<typeof useConvex>): Promise<Place[] | null> {
-  const result = await scanPhotos();
+async function findPhotoPlaces(
+  client: ReturnType<typeof useConvex>,
+  onProgress: (progress: ScanProgress) => void,
+  onMatching: () => void,
+): Promise<Place[] | null> {
+  const result = await scanPhotos(onProgress, onMatching);
   if (result.status === 'denied') return null;
   const places: Place[] = [];
   const labels = new Set<string>();
@@ -155,7 +172,7 @@ function PickPlaces({ found, selected, setSelected, notice, adding }: {
             <Chip key={place.id} label={`${place.name}, ${place.countryCode}`} check selected={isSelected(place)} onPress={() => toggle(place)} />
           ))}
         </View>
-        {loading && <Notice>Loading…</Notice>}
+        {loading && <Loading label={search ? 'Searching…' : 'Loading places…'} />}
         {!loading && !!search && results?.length === 0 && <Notice>No matches.</Notice>}
         <AsyncButton
           label={selected.length > 0 ? `Add ${selected.length} ${selected.length === 1 ? 'place' : 'places'}` : adding ? 'Done' : 'Continue'}

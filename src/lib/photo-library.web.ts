@@ -2,8 +2,9 @@ import type { Id } from '@/lib/backend';
 
 export type LibraryPhoto = { id: string; uri: string; width: number; height: number; lat: number; lng: number; takenAt: number };
 export type Near = { lat: number; lng: number; radiusKm: number };
+export type PhotoPage = { checked: number; located: number; uris: string[] };
 export const photoLibrarySupported = false;
-export async function readLocatedPhotos(_options: { near?: Near; limit?: number; budgetMs?: number } = {}): Promise<LibraryPhoto[] | null> {
+export async function readLocatedPhotos(_options: { near?: Near; limit?: number; budgetMs?: number; onPage?: (page: PhotoPage) => void } = {}): Promise<LibraryPhoto[] | null> {
   return null;
 }
 export async function assetKey(_photo: { id: string }): Promise<string> {
